@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, join, resolve } from "node:path";
@@ -67,6 +68,7 @@ registerAppTool(
     const revisions = await listContextRevisions(input);
     const sourceText = String(input.sourceText ?? current?.content ?? "");
     const widgetData = {
+      renderId: randomUUID(),
       title: String(input.title || "Codex 上下文编辑器"),
       projectDir: resolve(input.projectDir || process.cwd()),
       sourceText,

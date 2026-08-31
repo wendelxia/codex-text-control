@@ -80,6 +80,7 @@
         bridgeState: "connecting",
         dataReady: false,
         busyAction: "",
+        renderId: "",
         limits: { content: 1_000_000, note: 2_000 },
       };
       const $ = (id) => document.getElementById(id);
@@ -162,7 +163,15 @@
           $("page-title").textContent = data.title.trim();
           document.title = data.title.trim();
         }
-        if (typeof data.sourceText === "string" && !editor.value) editor.value = data.sourceText;
+        const incomingRenderId = typeof data.renderId === "string" ? data.renderId : "";
+        const isNewRender = Boolean(incomingRenderId && incomingRenderId !== state.renderId);
+        // Codex 可能复用同一个 Widget 实例。新的渲染编号必须装载新正文；
+        // 同一编号的重复宿主事件则不能覆盖用户已经输入但尚未保存的内容。
+        if (typeof data.sourceText === "string" && (isNewRender || !editor.value)) {
+          editor.value = data.sourceText;
+          if (isNewRender) $("note").value = "";
+        }
+        if (incomingRenderId) state.renderId = incomingRenderId;
         renderMeta(); renderHistory(); syncControls();
         if (projectArrived && state.bridgeState === "ready" && !state.busyAction) {
           setStatus("已连接 Codex，可以保存或提交。");

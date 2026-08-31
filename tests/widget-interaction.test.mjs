@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import vm from "node:vm";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 
 class FakeElement {
   constructor(tagName = "div", id = "") {
@@ -241,4 +243,47 @@ test("编辑器使用调用方传入的标题，并阻止空正文提交", async
   assert.equal(harness.document.title, "项目硬性准则");
   assert.equal(harness.calls.length, 0);
   assert.match(harness.element("status").textContent, /不能为空/);
+});
+
+test("同一 Widget 收到新的渲染编号时刷新正文，重复事件不覆盖用户编辑", async () => {
+  const harness = await createHarness({
+    toolOutput: { renderId: "render-1", projectDir: "D:\\demo", sourceText: "旧请求正文", revisions: [], current: null },
+  });
+  assert.equal(harness.element("editor").value, "旧请求正文");
+
+  harness.element("editor").value = "旧界面里的临时输入";
+  harness.element("note").value = "旧请求说明";
+  await harness.element("editor").emit("input");
+  harness.window.dispatchEvent({
+    type: "openai:set_globals",
+    detail: { globals: { toolOutput: { renderId: "render-2", projectDir: "D:\\demo", sourceText: "新请求正文", revisions: [], current: null } } },
+  });
+  assert.equal(harness.element("editor").value, "新请求正文");
+  assert.equal(harness.element("note").value, "");
+
+  harness.element("editor").value = "新请求后的用户编辑";
+  await harness.element("editor").emit("input");
+  harness.window.dispatchEvent({
+    type: "openai:set_globals",
+    detail: { globals: { toolOutput: { renderId: "render-2", projectDir: "D:\\demo", sourceText: "新请求正文", revisions: [], current: null } } },
+  });
+  assert.equal(harness.element("editor").value, "新请求后的用户编辑");
+});
+
+test("每次打开编辑器都会返回新的渲染编号", async () => {
+  const transport = new StdioClientTransport({ command: process.execPath, args: ["./scripts/start-mcp.mjs"] });
+  const client = new Client({ name: "render-id-contract-test", version: "0.2.1" });
+  await client.connect(transport);
+
+  try {
+    const first = await client.callTool({ name: "render_text_control_widget", arguments: { sourceText: "第一轮" } });
+    const second = await client.callTool({ name: "render_text_control_widget", arguments: { sourceText: "第二轮" } });
+    const firstId = first.structuredContent?.renderId;
+    const secondId = second.structuredContent?.renderId;
+    assert.equal(typeof firstId, "string");
+    assert.ok(firstId.length > 0);
+    assert.notEqual(secondId, firstId);
+  } finally {
+    await client.close();
+  }
 });
