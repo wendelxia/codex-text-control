@@ -1,6 +1,6 @@
 {
   "name": "codex-text-control",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "在 Codex 内编辑文本、保存不可变修订，并由用户确认权威上下文。",
   "private": true,
   "license": "MIT",

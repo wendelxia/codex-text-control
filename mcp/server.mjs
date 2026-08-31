@@ -28,7 +28,7 @@ const widgetToolMeta = (invoking, invoked) => ({
 });
 
 const server = new McpServer(
-  { name: "codex-text-control", version: "0.2.0" },
+  { name: "codex-text-control", version: "0.2.1" },
   {
     instructions:
       "Codex Text Control 用于把模型回复变成可编辑、可追踪、可提交的权威上下文。模型只负责调用 render_text_control_widget 打开编辑器；用户在 Widget 中保存或提交，Widget 再把 followUpMessage 发回当前对话。",

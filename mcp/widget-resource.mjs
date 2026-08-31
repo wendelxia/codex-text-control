@@ -13,7 +13,7 @@ export function createWidgetBridge({
   CustomEventClass,
   connectTimeoutMs = 15_000,
   requestTimeoutMs = 30_000,
-  appVersion = "0.2.0",
+  appVersion = "0.2.1",
 } = {}) {
   const eventClass = CustomEventClass || target?.CustomEvent;
   const publish = (globals) => {
@@ -131,7 +131,8 @@ export function registerTextControlWidget(server, { uri, html }) {
 function injectBridge(html) {
   const runtime = `(${createWidgetBridge.toString()})({App:window.__CTC_APPS__?.App,target:window,CustomEventClass:window.CustomEvent});`;
   const bridge = `<script>${appsScript()}</script><script>${runtime.replaceAll("</script", "<\\/script")}</script>`;
-  return html.includes("</head>") ? html.replace("</head>", `${bridge}</head>`) : `${bridge}${html}`;
+  // 使用替换回调而不是替换字符串，确保第三方 SDK 里的 `$&` 等文本不会被 String.replace（字符串替换）当成控制标记展开。
+  return html.includes("</head>") ? html.replace("</head>", () => `${bridge}</head>`) : `${bridge}${html}`;
 }
 
 function appsScript() {

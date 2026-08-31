@@ -6,7 +6,7 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 
 const projectDir = await mkdtemp(join(tmpdir(), "codex-text-control-probe-"));
 const transport = new StdioClientTransport({ command: process.execPath, args: ["./scripts/start-mcp.mjs"] });
-const client = new Client({ name: "codex-text-control-probe", version: "0.2.0" });
+const client = new Client({ name: "codex-text-control-probe", version: "0.2.1" });
 await client.connect(transport);
 try {
   const listed = await client.listTools();

@@ -13,7 +13,7 @@
 | [PromptTree](https://github.com/yedhuk/PromptTree) | 0 stars、约 8 commits | 默认 30 项测试通过，另 12 项被配置排除的测试单独运行也通过；mypy 类型检查 3 个错误 | `pyproject.toml` 写 MIT，但仓库无 `LICENSE`；无 CI；Windows 长路径下首次安装失败，短路径重试成功 | Git 原生不可变版本、DAG（有向无环图）和加密比本项目强；发布治理和跨平台安装仍弱。 |
 | [promptArq](https://github.com/tamaygz/promptArq) | 2 stars、约 237 commits | 生产构建通过；lint 失败；没有可执行测试脚本；npm 官方审计 22 个漏洞，其中 2 个严重、14 个高危 | 构建用 `--noCheck` 跳过类型检查；MCP 界面指向 `/api/mcp`，但本仓库服务端只有 OAuth 端点；团队角色主要是本地界面状态，没有可靠授权边界 | 功能面和视觉界面大，但工程证据与 README 口径不匹配，当前不适合作为可靠基线。 |
 | [Prompt Assemble UI](https://github.com/HominemAI/prompt-assemble-ui) | 0 stars、约 41 commits | 95/95 测试通过，生产构建通过，有测试和安全 CI；npm 官方审计 2 个高危漏洞 | README 明示是 AI 占位稿；测试说明声称有 `migration.test.ts`，仓库实际没有；只含前端，版本和恢复依赖另一个后端；无 `LICENSE` | 三个直接同类里自动化最强，但单仓库不能独立完成完整后端闭环。 |
-| 本项目 `codex-text-control` | 尚未公开，无 stars 或 commits 可比 | 19/19、MCP 探测、干净安装和构建链通过；npm 官方审计 0 个已知漏洞 | 真实 Codex 用户点击闭环尚未完成；无真正 diff；CI 文件刚建立，尚无线上运行 | 在“Codex 对话内由用户确认权威上下文”和最小权限上有独特性；公开工程和用户证据仍不足。 |
+| 本项目 `codex-text-control` | 尚未公开，无 stars 或 commits 可比 | 20/20、MCP 探测、干净安装和构建链通过；npm 官方审计 0 个已知漏洞 | 第一次真实 Codex 点击验收暴露 SDK 注入损坏，`0.2.1` 已修复并增加真实资源解析测试，宿主复验待重启；无真正 diff；CI 文件刚建立，尚无线上运行 | 在“Codex 对话内由用户确认权威上下文”和最小权限上有独特性；公开工程和用户证据仍不足。 |
 
 ## 成熟平台参照，不是正面对手
 
