@@ -1,12 +1,10 @@
 {
   "name": "codex-text-control",
-  "version": "0.2.0+codex.20260831061710",
+  "version": "0.2.0+codex.20260831062828",
   "description": "\u7f16\u8f91 Codex \u56de\u590d\u5e76\u628a\u786e\u8ba4\u540e\u7684\u7248\u672c\u63d0\u4ea4\u4e3a\u65b0\u7684\u6743\u5a01\u4e0a\u4e0b\u6587\u3002",
   "author": {
-    "name": "Local developer",
-    "email": "local@example.invalid"
+    "name": "Codex Text Control contributors"
   },
-  "homepage": "https://developers.openai.com/codex/",
   "license": "MIT",
   "keywords": [
     "context",
@@ -19,7 +17,7 @@
     "displayName": "Codex Text Control",
     "shortDescription": "\u7f16\u8f91\u56de\u590d\uff0c\u4fdd\u5b58\u7248\u672c\uff0c\u63d0\u4ea4\u6743\u5a01\u4e0a\u4e0b\u6587\u3002",
     "longDescription": "Codex Text Control\uff08Codex \u6587\u672c\u63a7\u5236\uff09\u63d0\u4f9b\u4e00\u4e2a\u9879\u76ee\u5185\u7684\u4e0a\u4e0b\u6587\u7248\u672c\u5e93\u548c\u539f\u751f\u7f16\u8f91\u5668\u3002\u4f60\u53ef\u4ee5\u4fee\u6539\u6a21\u578b\u56de\u590d\u3001\u8f7d\u5165\u5386\u53f2\u7248\u672c\u3001\u6062\u590d\u5f53\u524d\u6743\u5a01\u7248\u672c\uff0c\u5e76\u628a\u786e\u8ba4\u540e\u7684\u7248\u672c\u4f5c\u4e3a\u65b0\u7684\u7528\u6237\u6d88\u606f\u63d0\u4ea4\u7ed9\u5f53\u524d Codex \u5bf9\u8bdd\u3002\u539f\u6587\u4e0d\u4f1a\u88ab\u8986\u76d6\uff0c\u6743\u5a01\u7248\u672c\u4e5f\u4e0d\u4f1a\u548c\u8349\u7a3f\u6df7\u5728\u4e00\u8d77\u3002",
-    "developerName": "Local developer",
+    "developerName": "Codex Text Control contributors",
     "category": "Productivity",
     "capabilities": [
       "Interactive editor",
