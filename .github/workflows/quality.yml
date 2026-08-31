@@ -1,0 +1,60 @@
+name: Quality
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Node ${{ matrix.node-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node-version: [22, 24]
+
+    steps:
+      # 固定到已核验提交，避免同名标签被替换后静默执行不同代码。
+      - name: Checkout source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+          registry-url: https://registry.npmjs.org/
+
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Run behavior and protocol checks
+        run: npm run quality
+
+      - name: Audit production dependencies
+        run: npm run audit:prod
+
+  provenance:
+    name: Dependency signatures and provenance
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+          cache: npm
+          registry-url: https://registry.npmjs.org/
+
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Verify package signatures and provenance
+        run: npm run audit:signatures

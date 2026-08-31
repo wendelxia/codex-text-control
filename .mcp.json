@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "codex_text_control": {
+      "title": "Codex Text Control MCP",
+      "description": "保存上下文修订版本，并把确认后的版本提交为当前对话的权威上下文。",
+      "command": "node",
+      "args": ["./scripts/start-mcp.mjs"],
+      "cwd": "."
+    }
+  }
+}

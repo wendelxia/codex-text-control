@@ -1,0 +1,25 @@
+{
+  "name": "codex-text-control",
+  "version": "0.2.0",
+  "description": "在 Codex 内编辑文本、保存不可变修订，并由用户确认权威上下文。",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check ./mcp/server.mjs && node --check ./mcp/context-storage.mjs && node --check ./mcp/widget-resource.mjs && node --check ./scripts/start-mcp.mjs && node --check ./scripts/probe-mcp.mjs",
+    "probe:mcp": "node ./scripts/probe-mcp.mjs",
+    "quality": "npm test && npm run check && npm run probe:mcp",
+    "audit:prod": "npm audit --omit=dev --audit-level=high --registry=https://registry.npmjs.org/",
+    "audit:signatures": "npm audit signatures --registry=https://registry.npmjs.org/",
+    "verify:candidate": "npm run quality && npm run audit:prod && npm run audit:signatures"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/ext-apps": "^1.7.4",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^4.4.3"
+  }
+}

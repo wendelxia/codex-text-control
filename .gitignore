@@ -1,0 +1,20 @@
+node_modules/
+coverage/
+dist/
+artifacts/
+logs/
+tmp/
+.codex-text-control/
+.gstack/
+*.log
+*.tmp
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+.DS_Store
+Thumbs.db
+
+# 中文说明：依赖、覆盖率、构建产物、运行数据和临时文件都能重新生成，不能混入源码历史。
+# 客观评价：忽略规则能减少泄漏和仓库污染，但不能替代提交前的密钥扫描。

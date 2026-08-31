@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codex Text Control"
+  short_description: "Edit replies and commit authoritative context"
+  default_prompt: "Use $codex-text-control to edit a Codex reply, save a revision, or commit the user's confirmed context."

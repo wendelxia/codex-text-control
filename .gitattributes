@@ -1,0 +1,9 @@
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+
+# 中文说明：源码和文档统一使用 LF 换行，图片按二进制处理，避免跨系统提交出现整文件变化。
+# 客观评价：这能稳定 Git 差异，但不会改变编辑器在本机显示文本的方式。

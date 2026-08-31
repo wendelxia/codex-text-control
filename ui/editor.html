@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Codex 上下文编辑器</title>
+  <style>
+    :root { color-scheme: light dark; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-width: 0; background: #f5f7fa; color: #17202a; }
+    main { max-width: 920px; margin: 0 auto; padding: 24px; }
+    header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+    h1 { margin: 0; font-size: 22px; line-height: 1.25; }
+    .subtitle { margin: 6px 0 0; color: #5c6773; font-size: 13px; }
+    .status { min-height: 20px; max-width: 360px; color: #216e4e; font-size: 13px; line-height: 1.45; text-align: right; }
+    .status[data-kind="error"] { color: #b42318; }
+    .status[data-kind="warning"] { color: #8a4b08; }
+    .status[data-kind="busy"] { color: #1558a6; }
+    label { display: block; font-weight: 650; font-size: 13px; margin: 14px 0 7px; }
+    textarea, input { width: 100%; border: 1px solid #c7d0d9; border-radius: 6px; background: #fff; color: inherit; padding: 12px; font: inherit; }
+    textarea { min-height: 340px; resize: vertical; line-height: 1.55; }
+    textarea:focus, input:focus { outline: 3px solid #9cc7ff; outline-offset: 1px; border-color: #2878d4; }
+    .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
+    button { border: 1px solid #aeb9c4; border-radius: 6px; padding: 9px 13px; background: #fff; color: inherit; font: inherit; cursor: pointer; }
+    button:hover { background: #edf2f7; }
+    button.primary { border-color: #1558a6; background: #1558a6; color: #fff; }
+    button.primary:hover { background: #0f4788; }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+    .meta { margin-top: 14px; border-top: 1px solid #d6dde5; padding-top: 12px; font-size: 12px; color: #5c6773; }
+    .history { margin-top: 14px; }
+    .history summary { cursor: pointer; font-size: 13px; font-weight: 650; }
+    .revision { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid #dde3e9; font-size: 12px; }
+    .revision-copy { min-width: 0; overflow-wrap: anywhere; white-space: pre-line; }
+    .revision button { padding: 4px 8px; font-size: 12px; }
+    @media (prefers-color-scheme: dark) {
+      body { background: #15191d; color: #edf2f7; }
+      .subtitle, .meta { color: #aeb9c4; }
+      .status { color: #7dd3a7; }
+      .status[data-kind="error"] { color: #ff9b8f; }
+      .status[data-kind="warning"] { color: #f0bd70; }
+      .status[data-kind="busy"] { color: #8fc2ff; }
+      textarea, input, button { background: #20262c; border-color: #46525e; color: #edf2f7; }
+      button:hover { background: #2a333c; }
+      .primary { background: #2d76c7 !important; border-color: #5b9fe7 !important; }
+    }
+    @media (max-width: 560px) { main { padding: 16px; } header { display: block; } .status { text-align: left; margin-top: 8px; } textarea { min-height: 280px; } }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1 id="page-title">Codex 上下文编辑器</h1>
+        <p class="subtitle">项目级上下文版本</p>
+      </div>
+      <div id="status" class="status" role="status" aria-live="polite"></div>
+    </header>
+
+    <label for="note">本次修改说明</label>
+    <input id="note" type="text" maxlength="2000" placeholder="例如：删掉重复要求，保留验收条件">
+    <label for="editor">上下文正文</label>
+    <textarea id="editor" maxlength="1000000" spellcheck="true" aria-describedby="meta"></textarea>
+    <div class="toolbar">
+      <button id="save" type="button">保存修订版本</button>
+      <button id="commit" type="button" class="primary">提交权威上下文</button>
+      <button id="reset" type="button">恢复当前权威版本</button>
+    </div>
+    <div id="meta" class="meta"></div>
+    <details class="history">
+      <summary>版本历史</summary>
+      <div id="history"></div>
+    </details>
+  </main>
+  <script>
+    (function () {
+      const state = {
+        projectDir: "",
+        revisions: [],
+        current: null,
+        bridgeState: "connecting",
+        dataReady: false,
+        busyAction: "",
+        limits: { content: 1_000_000, note: 2_000 },
+      };
+      const $ = (id) => document.getElementById(id);
+      const editor = $("editor");
+      const status = $("status");
+      const requestTimeoutMs = Number(window.__CTC_REQUEST_TIMEOUT_MS__) > 0
+        ? Number(window.__CTC_REQUEST_TIMEOUT_MS__)
+        : 30_000;
+      const setStatus = (message, kind = "success") => {
+        status.textContent = String(message || "");
+        status.dataset.kind = kind;
+      };
+      const withTimeout = (work, message) => new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+          const error = new Error(message);
+          error.code = "TIMEOUT";
+          reject(error);
+        }, requestTimeoutMs);
+        Promise.resolve(work).then(
+          (value) => { clearTimeout(timer); resolve(value); },
+          (error) => { clearTimeout(timer); reject(error); },
+        );
+      });
+      const syncControls = () => {
+        const unavailable = state.bridgeState !== "ready" || !state.dataReady;
+        const busy = Boolean(state.busyAction);
+        $("save").disabled = unavailable || busy;
+        $("commit").disabled = unavailable || busy;
+        $("reset").disabled = busy || !state.current?.content;
+      };
+      const setBridgeStatus = (bridgeStatus) => {
+        if (!bridgeStatus || typeof bridgeStatus !== "object") return;
+        state.bridgeState = bridgeStatus.state || "failed";
+        if (state.bridgeState === "ready" && state.dataReady) setStatus(bridgeStatus.message || "已连接 Codex，可以保存或提交。");
+        else if (state.bridgeState === "ready") setStatus("已连接 Codex，正在加载项目数据...", "busy");
+        else if (state.bridgeState === "connecting") setStatus(bridgeStatus.message || "正在连接 Codex...", "busy");
+        else setStatus(bridgeStatus.message || "Codex 桥接不可用，请关闭编辑器后重试。", "error");
+        syncControls();
+      };
+      const tool = async (name, args, label) => {
+        if (state.bridgeState !== "ready") throw new Error("Codex 工具桥接尚未就绪，请稍后重试。");
+        if (!window.codexTextControlMcp?.callServerTool) throw new Error("Codex 工具桥接尚未就绪，请稍后重试。");
+        const result = await withTimeout(
+          window.codexTextControlMcp.callServerTool({ name, arguments: args }),
+          `${label || name}超时，结果未知。按钮已恢复；请先重新打开编辑器确认版本历史。`,
+        );
+        if (result?.isError) throw new Error(result.content?.[0]?.text || "工具调用失败。");
+        return result?.structuredContent || result?.result || {};
+      };
+      const reusableRevision = () => [...state.revisions].reverse().find((revision) => revision?.content === editor.value) || null;
+      const rememberRevision = (revision) => {
+        if (!revision?.id) throw new Error("工具没有返回修订版本编号。");
+        state.revisions = [...state.revisions.filter((item) => item.id !== revision.id), revision];
+        return revision;
+      };
+      const requireContent = () => {
+        if (!editor.value.trim()) throw new Error("上下文正文不能为空。");
+        if (editor.value.length > state.limits.content) throw new Error(`上下文正文不能超过 ${state.limits.content} 个字符。`);
+        return editor.value;
+      };
+      const noteText = () => {
+        const note = $("note").value;
+        if (note.length > state.limits.note) throw new Error(`修改说明不能超过 ${state.limits.note} 个字符。`);
+        return note;
+      };
+      const loadData = (data) => {
+        if (!data || typeof data !== "object") return;
+        const projectArrived = typeof data.projectDir === "string" && Boolean(data.projectDir.trim());
+        if (projectArrived) {
+          state.projectDir = data.projectDir;
+          state.dataReady = true;
+        }
+        state.revisions = Array.isArray(data.revisions) ? data.revisions : state.revisions;
+        if (Number(data.limits?.content) > 0) state.limits.content = Number(data.limits.content);
+        if (Number(data.limits?.note) > 0) state.limits.note = Number(data.limits.note);
+        editor.maxLength = state.limits.content;
+        $("note").maxLength = state.limits.note;
+        if (Object.prototype.hasOwnProperty.call(data, "current")) state.current = data.current;
+        if (typeof data.title === "string" && data.title.trim()) {
+          $("page-title").textContent = data.title.trim();
+          document.title = data.title.trim();
+        }
+        if (typeof data.sourceText === "string" && !editor.value) editor.value = data.sourceText;
+        renderMeta(); renderHistory(); syncControls();
+        if (projectArrived && state.bridgeState === "ready" && !state.busyAction) {
+          setStatus("已连接 Codex，可以保存或提交。");
+        }
+      };
+      const renderMeta = () => {
+        const current = state.current;
+        const latest = state.revisions.at(-1);
+        if (current && latest && current.id !== latest.id) {
+          $("meta").textContent = `当前权威版本：${current.id} · 最新修订：${latest.id}（尚未提交）`;
+        } else if (current) {
+          $("meta").textContent = `当前版本：${current.id} · 已提交为权威`;
+        } else if (latest) {
+          $("meta").textContent = `最新修订：${latest.id} · 尚未提交`;
+        } else {
+          $("meta").textContent = "当前项目还没有保存过上下文版本。";
+        }
+      };
+      const renderHistory = () => {
+        const history = $("history");
+        history.replaceChildren();
+        if (!state.revisions.length) {
+          const empty = document.createElement("p");
+          empty.className = "meta";
+          empty.textContent = "暂无历史版本。";
+          history.append(empty);
+          return;
+        }
+        for (const revision of state.revisions) {
+          const row = document.createElement("div");
+          row.className = "revision";
+          const copy = document.createElement("span");
+          copy.className = "revision-copy";
+          copy.textContent = `版本 ${revision.number || "?"} · ${String(revision.id || "未知编号")}\n${String(revision.note || "无说明")}`;
+          const load = document.createElement("button");
+          load.type = "button";
+          load.textContent = "载入";
+          load.addEventListener("click", () => {
+            editor.value = String(revision.content || "");
+            setStatus(`已载入 ${revision.id}，尚未提交。`);
+            syncControls();
+          });
+          row.append(copy, load);
+          history.append(row);
+        }
+      };
+      $("save").addEventListener("click", async () => {
+        try {
+          const content = requireContent();
+          state.busyAction = "save"; syncControls(); setStatus("正在保存修订版本...", "busy");
+          const existing = reusableRevision();
+          if (existing) setStatus(`${existing.id} 已包含相同正文，无需重复保存。`);
+          else {
+            const result = await tool("save_text_revision", { projectDir: state.projectDir, content, source: "widget-edit", note: noteText() }, "保存修订版本");
+            const revision = rememberRevision(result.revision);
+            setStatus(`已保存 ${revision.id}。`);
+            renderHistory(); renderMeta();
+          }
+        } catch (error) { setStatus(error?.message || "保存失败。", "error"); }
+        finally { state.busyAction = ""; syncControls(); }
+      });
+      $("commit").addEventListener("click", async () => {
+        try {
+          const content = requireContent();
+          state.busyAction = "commit"; syncControls(); setStatus("正在提交权威上下文...", "busy");
+          let revision = reusableRevision();
+          if (!revision) {
+            const saved = await tool("save_text_revision", { projectDir: state.projectDir, content, source: "widget-authoritative", note: noteText() || "提交为权威上下文" }, "保存待提交版本");
+            revision = rememberRevision(saved.revision);
+          }
+          const result = await tool("commit_authoritative_context", { projectDir: state.projectDir, revisionId: revision.id }, "提交权威上下文");
+          state.current = { ...(result.revision || revision), authoritative: true, committedAt: result.committedAt };
+          renderHistory(); renderMeta();
+          if (result.followUpMessage && window.codexTextControlMcp?.sendFollowUpMessage) {
+            try {
+              await withTimeout(
+                window.codexTextControlMcp.sendFollowUpMessage({ role: "user", content: [{ type: "text", text: result.followUpMessage }] }),
+                "权威版本已提交，但向当前对话回传消息超时。",
+              );
+              setStatus(`已提交 ${revision.id}，权威上下文已发回当前对话。`);
+            } catch (messageError) {
+              const timedOut = messageError?.code === "TIMEOUT" || String(messageError?.message || "").includes("超时");
+              const message = timedOut
+                ? `已提交 ${revision.id}；消息回传超时，宿主是否收到仍然未知。`
+                : `已提交 ${revision.id}，但未能发回当前对话：${messageError?.message || "消息通道不可用"}`;
+              setStatus(message, "warning");
+            }
+          } else setStatus(`已提交 ${revision.id}，但宿主没有提供消息回传能力。`, "warning");
+        } catch (error) { setStatus(error?.message || "提交失败。", "error"); }
+        finally { state.busyAction = ""; syncControls(); }
+      });
+      $("reset").addEventListener("click", () => { if (state.current?.content) { editor.value = state.current.content; setStatus("已恢复当前权威版本，尚未产生新修订。"); syncControls(); } else setStatus("当前还没有权威版本。", "warning"); });
+      editor.addEventListener("input", syncControls);
+      window.addEventListener("openai:set_globals", (event) => {
+        const globals = event.detail?.globals;
+        setBridgeStatus(globals?.codexTextControlBridgeStatus);
+        loadData(globals?.toolOutput);
+      });
+      window.addEventListener("message", (event) => { const result = event.data?.params?.result; if (event.data?.method === "ui/notifications/tool-result") loadData(result?._meta?.widgetData || result?.structuredContent); });
+      setBridgeStatus(window.openai?.codexTextControlBridgeStatus || { state: window.codexTextControlMcp ? "ready" : "connecting" });
+      loadData(window.openai?.toolOutput);
+    })();
+  </script>
+</body>
+</html>
