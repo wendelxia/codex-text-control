@@ -35,7 +35,7 @@ const server = new McpServer(
   },
 );
 
-registerTextControlWidget(server, {
+await registerTextControlWidget(server, {
   uri: WIDGET_URI,
   html: async () => readFile(join(ROOT, "ui", "editor.html"), "utf8"),
 });

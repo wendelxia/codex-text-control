@@ -112,19 +112,22 @@ export function createWidgetBridge({
   return bridge;
 }
 
-export function registerTextControlWidget(server, { uri, html }) {
+export async function registerTextControlWidget(server, { uri, html }) {
   const metadata = {
     ui: { prefersBorder: true, csp: { connectDomains: [], resourceDomains: [], frameDomains: [] } },
     "openai/widgetDescription": "编辑 Codex 回复并提交为新的权威上下文。",
     "openai/widgetPrefersBorder": true,
     "openai/widgetCSP": { connect_domains: [], resource_domains: [], frame_domains: [] },
   };
+  // 插件升级可能在旧 MCP 进程退出前回收它的缓存目录。启动时把完整资源放进内存，
+  // 后续 resources/read（资源读取）就不会再次依赖已经可能不存在的安装文件。
+  const widgetHtml = injectBridge(await html());
   registerAppResource(server, "codex-text-control-widget", uri, {
     title: "Codex 上下文编辑器",
     description: "在 Codex 内编辑、保存并提交新的权威上下文。",
     _meta: metadata,
   }, async () => ({
-    contents: [{ uri, mimeType: RESOURCE_MIME_TYPE, text: injectBridge(await html()), _meta: metadata }],
+    contents: [{ uri, mimeType: RESOURCE_MIME_TYPE, text: widgetHtml, _meta: metadata }],
   }));
 }
 

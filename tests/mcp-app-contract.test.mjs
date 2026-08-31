@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import vm from "node:vm";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { registerTextControlWidget } from "../mcp/widget-resource.mjs";
 
 const WIDGET_URI = "ui://widget/codex-text-control/editor.html";
 
@@ -48,6 +49,35 @@ test("MCP 返回的 Widget SDK 脚本保持完整且可执行解析", async () =
       "注入后的 MCP Apps SDK 脚本必须保持合法 JavaScript。\n",
     );
     assert.match(scripts[0], /globalThis\.__CTC_APPS__=\{App:/, "SDK 脚本必须暴露 App 构造器。\n");
+
+    // 插件升级会回收旧缓存目录，但已经启动的 MCP 进程可能暂时继续运行。
+    // 资源必须在注册时进入内存；否则旧进程会在用户打开编辑器时才读文件并报 ENOENT（文件不存在）。
+    let resourceReader;
+    let sourceAvailable = true;
+    let sourceReadCount = 0;
+    const fakeServer = {
+      registerResource(_name, _uri, _config, reader) {
+        resourceReader = reader;
+        return {};
+      },
+    };
+    await registerTextControlWidget(fakeServer, {
+      uri: WIDGET_URI,
+      html: async () => {
+        sourceReadCount += 1;
+        if (!sourceAvailable) {
+          const error = new Error("ENOENT: 模拟插件缓存已被回收");
+          error.code = "ENOENT";
+          throw error;
+        }
+        return "<!doctype html><html><head></head><body>启动快照</body></html>";
+      },
+    });
+    assert.equal(sourceReadCount, 1, "Widget HTML 必须在资源注册时读取一次。\n");
+    sourceAvailable = false;
+    const snapshotted = await resourceReader();
+    assert.match(snapshotted.contents?.[0]?.text || "", /启动快照/);
+    assert.equal(sourceReadCount, 1, "resources/read 不得再次访问可能已被回收的插件安装目录。\n");
   } finally {
     await client.close();
   }
