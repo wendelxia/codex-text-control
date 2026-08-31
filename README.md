@@ -125,7 +125,7 @@ npm.cmd run quality
 npm.cmd run verify:candidate
 ```
 
-`quality` 会依次运行 20 项自动测试、JavaScript 语法检查和 MCP 闭环探测。依赖审计使用 npm 官方注册表，是因为部分镜像没有实现安全审计接口；“接口不支持”不能算“没有漏洞”。
+`quality` 会依次运行完整自动测试、JavaScript 语法检查和 MCP 闭环探测。依赖审计使用 npm 官方注册表，是因为部分镜像没有实现安全审计接口；“接口不支持”不能算“没有漏洞”。
 
 ## 权威上下文的数学例子
 
