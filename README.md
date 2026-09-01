@@ -6,6 +6,7 @@
     <a href="docs/evidence/verification-0.5.8-2026-09-01.md"><img alt="状态：源码候选版" src="https://img.shields.io/badge/status-source_candidate-f59e0b"></a>
     <img alt="版本：0.5.8" src="https://img.shields.io/badge/version-0.5.8-2563eb">
     <img alt="Node.js（JavaScript 运行时）22 或更高版本" src="https://img.shields.io/badge/Node.js-%3E%3D22-339933?logo=nodedotjs&logoColor=white">
+    <a href="https://github.com/wendelxia/codex-text-control/actions/workflows/quality.yml"><img alt="持续集成状态" src="https://github.com/wendelxia/codex-text-control/actions/workflows/quality.yml/badge.svg"></a>
     <a href="LICENSE"><img alt="MIT 许可证" src="https://img.shields.io/badge/license-MIT-0f766e"></a>
   </p>
   <p>
@@ -61,9 +62,11 @@ Codex Text Control 是一个本地 Codex 插件。它不改写已经显示的聊
 
 ### 从源码验证
 
-当前还没有可供陌生用户使用的公开仓库地址和发行版，不能提供虚假的 `git clone` 或一键安装入口。拿到源码目录后，可执行：
+当前公开仓库提供源码和可复现检查，但尚未提供发行版或一键安装入口：
 
 ```powershell
+git clone https://github.com/wendelxia/codex-text-control.git
+Set-Location codex-text-control
 npm ci --ignore-scripts
 npm run quality
 npm run verify:candidate
@@ -185,7 +188,7 @@ Codex 读取当前权威上下文
 | 干净克隆 | 全新本地克隆执行 `npm ci --ignore-scripts` 后，`74/74`、语法检查和 MCP 探针通过，工作树干净 | 结果不依赖开发目录已有 `node_modules` 或未跟踪源码 | 不是第二位用户或第二个操作系统的独立复现 |
 | 真实宿主 | `0.5.7+codex.20260901154437` 在当前 Windows Codex 中完成“修改 -> 原文检查 -> 返回修改 -> 再检查 -> 确认提交 -> 回读” | 只证明最后一个已安装构建的当前环境闭环 | `0.5.8` 改过存储和画布模型，不能继承这项宿主结论 |
 | 供应链检查 | 生产依赖已知高危漏洞 `0`，签名 `96`，来源证明 `11` | npm 当前数据源未报告对应问题 | 不能证明依赖没有未知漏洞 |
-| 公开发布 | 未通过 | 当前没有公开远程仓库、线上持续集成或发行版 | 不能提供陌生用户安装和维护承诺 |
+| 公开仓库 | 已建立 | `main` 已公开，GitHub Actions 会在 Windows、Linux 和 Node.js 22、24 上运行质量链 | 还没有发行版、陌生用户独立安装或长期维护承诺 |
 
 最新真实宿主提交版本为 `rev-1788249723947-c7d6a499`，对应 `0.5.7`。`0.5.8` 的并发失败复现、修复和原文保真结果见 [`0.5.8 验证记录`](docs/evidence/verification-0.5.8-2026-09-01.md)。当前缺少适用于“Codex 上下文画布”的外部权威能力基准，因此不能用 GitHub 星数、同类项目知名度或内部测试数量声称能力领先。
 
@@ -195,7 +198,7 @@ Codex 读取当前权威上下文
 - 未点击“确认提交”就关闭画布时，当前本地草稿不会写入版本历史，也不承诺恢复。
 - 没有逐行差异视图、公开安全联系人或跨平台真实宿主证据；不可变状态转换不是跨机器分布式事务，网络文件系统语义尚未验证。
 - 项目目录依赖 Codex 提供当前工作区；缺少目录时会明确拒绝，不会猜测或退回插件安装缓存。
-- 当前只适合本地试用和继续验证，不等于已经完成公开发布准备。
+- 当前只适合从源码试用和继续验证；公开仓库不等于已经达到正式发行或生产可用。
 
 ## 文档导航
 
@@ -219,4 +222,4 @@ Codex 读取当前权威上下文
 
 项目使用 [MIT 许可证](LICENSE)，另有[中文说明](LICENSE.zh-CN.md)。第三方依赖与许可证说明见 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)。
 
-客观评价：这个项目已经从“聊天里再复制一份全文”走到可实际点击的项目级上下文画布；并发覆盖和非目标全文重排也有失败复现与回归测试。它距离成熟公开项目仍差 `0.5.8` 真实宿主复验、公开安装、线上持续集成、跨平台复现、公开安全渠道和外部基准。README（仓库首页说明）只按证据说明当前阶段，不把文档完整度冒充产品成熟度。
+客观评价：这个项目已经从“聊天里再复制一份全文”走到可实际点击的项目级上下文画布；并发覆盖和非目标全文重排也有失败复现与回归测试。公开源码和持续集成入口已经建立，但距离成熟公开项目仍差 `0.5.8` 真实宿主复验、公开安装、陌生用户复现、跨平台真实宿主结果和外部基准。README（仓库首页说明）只按证据说明当前阶段，不把文档完整度冒充产品成熟度。

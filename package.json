@@ -4,6 +4,14 @@
   "description": "在 Codex 上下文画布中直接编辑文字和表格，并在完成编辑时保存权威版本。",
   "private": true,
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wendelxia/codex-text-control.git"
+  },
+  "homepage": "https://github.com/wendelxia/codex-text-control#readme",
+  "bugs": {
+    "url": "https://github.com/wendelxia/codex-text-control/issues"
+  },
   "type": "module",
   "engines": {
     "node": ">=22"
