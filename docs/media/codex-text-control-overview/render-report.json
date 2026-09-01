@@ -1,0 +1,320 @@
+{
+  "generatedAt": "2026-09-01T20:49:18.356Z",
+  "locale": "en-US",
+  "purpose": "Explain why authoritative context needs a direct editing surface and demonstrate the complete user-confirmed revision loop.",
+  "source": {
+    "productSourceHead": "863c380cdc3f64707cab56e856f24785a76f5ec0",
+    "identity": "input-hashes-authoritative",
+    "note": "The HEAD identifies the product baseline at render time. The input hashes below identify the exact staged or working-tree render sources.",
+    "version": "0.5.8",
+    "screenLabel": "UI demonstration · current source"
+  },
+  "output": {
+    "file": "docs/media/codex-text-control-overview/codex-text-control-overview.mp4",
+    "bytes": 10641173,
+    "sha256": "86865c30f4bfcddaace5dee3bcc26ec21365a8fb8542c819a67faed0955d8a9b",
+    "durationSeconds": 145.3,
+    "streams": [
+      {
+        "codecType": "video",
+        "codecName": "h264",
+        "width": 1920,
+        "height": 1080,
+        "frameRate": "30/1"
+      },
+      {
+        "codecType": "audio",
+        "codecName": "aac",
+        "frameRate": "0/0",
+        "sampleRate": "48000",
+        "channels": 1
+      }
+    ],
+    "loudnessAnalysis": [
+      "\t\"input_i\" : \"-16.24\",",
+      "\t\"input_tp\" : \"-1.47\",",
+      "\t\"input_lra\" : \"3.70\",",
+      "\t\"input_thresh\" : \"-26.63\","
+    ],
+    "cleanDecode": true
+  },
+  "narration": {
+    "voice": {
+      "name": "Microsoft Zira Desktop",
+      "culture": "en-US"
+    },
+    "sceneDurationsSeconds": [
+      8.3,
+      10,
+      10.3,
+      10.2,
+      6.6,
+      9.6,
+      9.5,
+      8.2,
+      8.9,
+      10.1,
+      9.7,
+      9.4,
+      9.9,
+      10.5,
+      14.1
+    ],
+    "voiceDurationsSeconds": [
+      7.377868,
+      9.037778,
+      9.38771,
+      9.232608,
+      5.638141,
+      8.638095,
+      8.523129,
+      7.203039,
+      7.967937,
+      9.137596,
+      8.717596,
+      8.427755,
+      8.952426,
+      9.527846,
+      13.11746
+    ]
+  },
+  "environment": {
+    "os": {
+      "platform": "win32",
+      "release": "10.0.19045",
+      "version": "Windows 10 Pro",
+      "architecture": "x64"
+    },
+    "node": "v24.16.0",
+    "chrome": "Google Chrome 151.0.7922.175",
+    "ffmpeg": "ffmpeg version 9.0-full_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers",
+    "ffprobe": "ffprobe version 9.0-full_build-www.gyan.dev Copyright (c) 2007-2026 the FFmpeg developers",
+    "font": {
+      "family": "Arial",
+      "file": "arial.ttf",
+      "fileVersion": null
+    },
+    "speechVoice": "Microsoft Zira Desktop",
+    "speechCulture": "en-US"
+  },
+  "githubActions": {
+    "workflow": "Quality",
+    "runId": 33545397952,
+    "url": "https://github.com/wendelxia/codex-text-control/actions/runs/33545397952",
+    "headSha": "863c380cdc3f64707cab56e856f24785a76f5ec0",
+    "conclusion": "success",
+    "jobsPassed": 5,
+    "jobsTotal": 5,
+    "observedAt": "2026-09-02"
+  },
+  "reproducibility": {
+    "mode": "semantic-not-byte-identical",
+    "guarantee": "The same source and compatible tools reproduce the same scenes, narration text, dimensions, codecs, and evidence structure.",
+    "byteLimit": "Browser rendering, speech synthesis, font rasterization, and codec builds can change encoded bytes across toolchains."
+  },
+  "languageGate": {
+    "publicCopy": "passed",
+    "renderedVisibleUi": [
+      {
+        "state": "initial",
+        "result": "passed"
+      },
+      {
+        "state": "edited-text",
+        "result": "passed"
+      },
+      {
+        "state": "edited-table",
+        "result": "passed"
+      },
+      {
+        "state": "source",
+        "result": "passed"
+      },
+      {
+        "state": "review",
+        "result": "passed"
+      },
+      {
+        "state": "returned",
+        "result": "passed"
+      },
+      {
+        "state": "success",
+        "result": "passed"
+      },
+      {
+        "state": "history",
+        "result": "passed"
+      }
+    ]
+  },
+  "inputs": [
+    {
+      "file": "scripts/promo-content.mjs",
+      "sha256": "cec3fc7b91574b37f54952115a938542d41cdea839f5330a6f672d7b8e80ffb2"
+    },
+    {
+      "file": "scripts/promo-html.mjs",
+      "sha256": "1edf84babfcc2cf4f075d2842e57b19bcee867fa0f3b9006b511b11214e45c41"
+    },
+    {
+      "file": "scripts/public-media-guard.mjs",
+      "sha256": "6b1b4fee8876f724b2fed3f922af9f1815b0ed784be4b11cd14d032ba4c3d47d"
+    },
+    {
+      "file": "scripts/public-media-publisher.mjs",
+      "sha256": "5b61a219e7889a4e566bb2d18d94aee108f47c12102fd12d28b0fa35a096f62d"
+    },
+    {
+      "file": "scripts/render-github-promo.mjs",
+      "sha256": "68ea570ef75901ae77ed137618fd4fbf71d1f066e3a1957fdbc21bd1daaac1ef"
+    },
+    {
+      "file": "docs/design/public-media-language.md",
+      "sha256": "36a243416be82f0add852de4e17a8cb800b0e6df4b10cdb96c4f6350f50e9771"
+    },
+    {
+      "file": "ui/editor.html",
+      "sha256": "4da1424561202ed4207ea254c5b769ea2c62c727b178557006b6bc14d3056dc4"
+    },
+    {
+      "file": "ui/editor.js",
+      "sha256": "b2a5cb31b4ab47ce6ba6a4e99c925fb242fe6413d65a159064fb0a294c2ee3dd"
+    },
+    {
+      "file": "ui/canvas-model.js",
+      "sha256": "d914d7814930b10ca43327543636153a5abcf69088a20c54a06a0935a644ed30"
+    }
+  ],
+  "artifacts": [
+    {
+      "file": "README.md",
+      "bytes": 4197,
+      "sha256": "996156b2ac2c7f94d65816ffc72fc875a048dedcc9069abf12ef327306b183b7"
+    },
+    {
+      "file": "codex-text-control-overview.mp4",
+      "bytes": 10641173,
+      "sha256": "86865c30f4bfcddaace5dee3bcc26ec21365a8fb8542c819a67faed0955d8a9b"
+    },
+    {
+      "file": "codex-text-control-overview-cover.png",
+      "bytes": 113633,
+      "sha256": "5a5b92ceb5dd4c37e06dd55b8fe701773edde353bdc700ec172ba798f0d861e6"
+    },
+    {
+      "file": "codex-text-control-overview.en.ass",
+      "bytes": 3250,
+      "sha256": "ae09a24281dae5ab64d0e36ae11cb9291a6615d51cc10cfcf714213997775b59"
+    },
+    {
+      "file": "transcript.en.md",
+      "bytes": 3373,
+      "sha256": "187d74f687fbc30e15261dcb3ff1c980b3b4e8568b7b67fd865c10a3521b32d0"
+    }
+  ],
+  "qaFrames": [
+    {
+      "scene": "intro",
+      "file": "tmp/github-promo/generated/qa-01-intro.png",
+      "bytes": 414441,
+      "sha256": "a92fd8c12d4ac3bbdd8d46a231eb7c373e12b79594dc3636048774ca2cb21709"
+    },
+    {
+      "scene": "fragmentation",
+      "file": "tmp/github-promo/generated/qa-02-fragmentation.png",
+      "bytes": 438955,
+      "sha256": "26666983b9a2616e6e648aec0b62f198293835cfb2abb7cec5096349fec23b30"
+    },
+    {
+      "scene": "precision",
+      "file": "tmp/github-promo/generated/qa-03-precision.png",
+      "bytes": 373479,
+      "sha256": "a356b291e2604fff87137a8547081f6bf0927b5072fd93ac30b0ccf51b5730da"
+    },
+    {
+      "scene": "authority",
+      "file": "tmp/github-promo/generated/qa-04-authority.png",
+      "bytes": 455087,
+      "sha256": "fd2474f945c37c84cfdef0df7d7ee9f67c35677e08d29e1cf8d0a0c420146ddc"
+    },
+    {
+      "scene": "open",
+      "file": "tmp/github-promo/generated/qa-05-open.png",
+      "bytes": 345703,
+      "sha256": "1a9afc3c121960d8cf07ffd0c4ac3aaea33461fdfc8d9788227fa033e91bb64f"
+    },
+    {
+      "scene": "edit-text",
+      "file": "tmp/github-promo/generated/qa-06-edit-text.png",
+      "bytes": 434744,
+      "sha256": "414d2c07641c2efea691502825f48cbad53df6b236e7d69d6a117618d80f1b6d"
+    },
+    {
+      "scene": "edit-table",
+      "file": "tmp/github-promo/generated/qa-07-edit-table.png",
+      "bytes": 436674,
+      "sha256": "4f8a9e9bbac7f2e86655cf8ad5fa8fe19d98fa972a1851513b5f5d80d1c02853"
+    },
+    {
+      "scene": "source",
+      "file": "tmp/github-promo/generated/qa-08-source.png",
+      "bytes": 453480,
+      "sha256": "61bf11ca37a9ce9c3e9d126f63773b0729e53182123dca20ffceb89c8fe65034"
+    },
+    {
+      "scene": "review",
+      "file": "tmp/github-promo/generated/qa-09-review.png",
+      "bytes": 471589,
+      "sha256": "68adc1a76cb79650dac7644f6ee6ea99966c10a112f54729c3b6d4d42a8be190"
+    },
+    {
+      "scene": "return",
+      "file": "tmp/github-promo/generated/qa-10-return.png",
+      "bytes": 456113,
+      "sha256": "a0d7770d6bad97c5cc5edb46962edf0a8eea65d9ee75cf02d3a518c156f5ec87"
+    },
+    {
+      "scene": "commit",
+      "file": "tmp/github-promo/generated/qa-11-commit.png",
+      "bytes": 445211,
+      "sha256": "6cc67f33a992f1136c990d3c590028f694a5c884ac32eaec2875be181ecbaec2"
+    },
+    {
+      "scene": "notification",
+      "file": "tmp/github-promo/generated/qa-12-notification.png",
+      "bytes": 468683,
+      "sha256": "3d0e79f837bb65b921491838b95fffea413cb44c629c878dc4c6f148925c11e8"
+    },
+    {
+      "scene": "history",
+      "file": "tmp/github-promo/generated/qa-13-history.png",
+      "bytes": 498203,
+      "sha256": "d05891d658bebf6d29b0ff0fca93fdeb06a64af85063fcf1e130ff37a2d26fcb"
+    },
+    {
+      "scene": "reread",
+      "file": "tmp/github-promo/generated/qa-14-reread.png",
+      "bytes": 351435,
+      "sha256": "d24630795c30de029fa7b411bc75d80e7e549ab1d82138676e2048180baab593"
+    },
+    {
+      "scene": "outro",
+      "file": "tmp/github-promo/generated/qa-15-outro.png",
+      "bytes": 439943,
+      "sha256": "0c351ce0f097096c76598712cd014ea6d633428156e1e90e8255dc44bc88e2a5"
+    }
+  ],
+  "verifiedClaims": [
+    "The product test suite reported 74/74 tests passing before this media-only change.",
+    "GitHub Actions run 33545397952 for commit 863c380cdc3f64707cab56e856f24785a76f5ec0 reported 5/5 jobs passing with conclusion success on 2026-09-02.",
+    "The repository license is MIT."
+  ],
+  "limitations": [
+    "Product screens are generated from the current source with a simulated Codex bridge; they are not a Codex host recording.",
+    "The demo harness replaces visible labels for English-only public media; it does not claim product localization.",
+    "Version 0.5.8 remains a source candidate and has not inherited the 0.5.7 real-host result.",
+    "No external authoritative capability benchmark currently fits this Codex context-canvas workflow."
+  ]
+}

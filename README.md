@@ -18,6 +18,16 @@
   </p>
 </div>
 
+<!-- PUBLIC_MEDIA:START -->
+<p align="center">
+  <a href="docs/media/codex-text-control-overview/codex-text-control-overview.mp4">
+    <img src="docs/media/codex-text-control-overview/codex-text-control-overview-cover.png" alt="Codex Text Control English product overview" width="900">
+  </a>
+</p>
+
+<p align="center"><strong><a href="docs/media/codex-text-control-overview/codex-text-control-overview.mp4">Watch the English overview: why it exists and the complete editing workflow</a></strong></p>
+<!-- PUBLIC_MEDIA:END -->
+
 ![Codex Text Control 主画布：直接编辑文字和 Markdown 表格](docs/evidence/screenshots/context-canvas-0.5.5-desktop-focused.png)
 
 > 主画布外观基线：文字直接编辑、Markdown 表格单元格可直接修改、控制区在长文中保持可见。`0.5.7` 在真实 Codex 中完成了“编辑 -> 原文检查 -> 确认提交”闭环；`0.5.8` 又增加跨进程原子状态转换和未编辑原文保真，仍待重新安装后的真实宿主复验。
