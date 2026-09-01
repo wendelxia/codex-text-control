@@ -1,9 +1,10 @@
 {
-  "generatedAt": "2026-09-01T20:49:18.356Z",
+  "generatedAt": "2026-09-01T21:37:11.656Z",
   "locale": "en-US",
-  "purpose": "Explain why authoritative context needs a direct editing surface and demonstrate the complete user-confirmed revision loop.",
+  "subtitleLocale": "zh-CN",
+  "purpose": "Start with common chat problems, then show how one editable accepted version solves them through a complete user-confirmed revision loop.",
   "source": {
-    "productSourceHead": "863c380cdc3f64707cab56e856f24785a76f5ec0",
+    "productSourceHead": "53164c6a08313cd3da7c9808a8d779675fbd3b7a",
     "identity": "input-hashes-authoritative",
     "note": "The HEAD identifies the product baseline at render time. The input hashes below identify the exact staged or working-tree render sources.",
     "version": "0.5.8",
@@ -11,9 +12,9 @@
   },
   "output": {
     "file": "docs/media/codex-text-control-overview/codex-text-control-overview.mp4",
-    "bytes": 10641173,
-    "sha256": "86865c30f4bfcddaace5dee3bcc26ec21365a8fb8542c819a67faed0955d8a9b",
-    "durationSeconds": 145.3,
+    "bytes": 10355222,
+    "sha256": "cf76c97f8ae8152478670934007532e960cc10d677635dd719f031afac3b31f3",
+    "durationSeconds": 142.2,
     "streams": [
       {
         "codecType": "video",
@@ -31,10 +32,10 @@
       }
     ],
     "loudnessAnalysis": [
-      "\t\"input_i\" : \"-16.24\",",
-      "\t\"input_tp\" : \"-1.47\",",
-      "\t\"input_lra\" : \"3.70\",",
-      "\t\"input_thresh\" : \"-26.63\","
+      "\t\"input_i\" : \"-16.31\",",
+      "\t\"input_tp\" : \"-1.49\",",
+      "\t\"input_lra\" : \"3.90\",",
+      "\t\"input_thresh\" : \"-26.72\","
     ],
     "cleanDecode": true
   },
@@ -44,10 +45,10 @@
       "culture": "en-US"
     },
     "sceneDurationsSeconds": [
-      8.3,
-      10,
-      10.3,
-      10.2,
+      9.9,
+      9.7,
+      9.6,
+      11.2,
       6.6,
       9.6,
       9.5,
@@ -58,13 +59,13 @@
       9.4,
       9.9,
       10.5,
-      14.1
+      9.4
     ],
     "voiceDurationsSeconds": [
-      7.377868,
-      9.037778,
-      9.38771,
-      9.232608,
+      8.987755,
+      8.793107,
+      8.608027,
+      10.232971,
       5.638141,
       8.638095,
       8.523129,
@@ -75,7 +76,7 @@
       8.427755,
       8.952426,
       9.527846,
-      13.11746
+      8.423084
     ]
   },
   "environment": {
@@ -90,9 +91,16 @@
     "ffmpeg": "ffmpeg version 9.0-full_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers",
     "ffprobe": "ffprobe version 9.0-full_build-www.gyan.dev Copyright (c) 2007-2026 the FFmpeg developers",
     "font": {
-      "family": "Arial",
-      "file": "arial.ttf",
-      "fileVersion": null
+      "primary": {
+        "family": "Arial",
+        "file": "arial.ttf",
+        "fileVersion": null
+      },
+      "subtitles": {
+        "family": "Microsoft YaHei",
+        "file": "msyh.ttc",
+        "fileVersion": null
+      }
     },
     "speechVoice": "Microsoft Zira Desktop",
     "speechCulture": "en-US"
@@ -114,6 +122,8 @@
   },
   "languageGate": {
     "publicCopy": "passed",
+    "englishNarration": "passed",
+    "simplifiedChineseSubtitles": "passed",
     "renderedVisibleUi": [
       {
         "state": "initial",
@@ -152,7 +162,7 @@
   "inputs": [
     {
       "file": "scripts/promo-content.mjs",
-      "sha256": "cec3fc7b91574b37f54952115a938542d41cdea839f5330a6f672d7b8e80ffb2"
+      "sha256": "4fecc010f9403aa0e4b4e7bcd0a0eb41953f697434eb3abb390c831739b107f8"
     },
     {
       "file": "scripts/promo-html.mjs",
@@ -160,7 +170,7 @@
     },
     {
       "file": "scripts/public-media-guard.mjs",
-      "sha256": "6b1b4fee8876f724b2fed3f922af9f1815b0ed784be4b11cd14d032ba4c3d47d"
+      "sha256": "47876774a36f4e1bc6dd8ab3403774027de99707130cfb9174d62a328b572f05"
     },
     {
       "file": "scripts/public-media-publisher.mjs",
@@ -168,11 +178,11 @@
     },
     {
       "file": "scripts/render-github-promo.mjs",
-      "sha256": "68ea570ef75901ae77ed137618fd4fbf71d1f066e3a1957fdbc21bd1daaac1ef"
+      "sha256": "d7efc35765689b70738664c494a2b017b61fa9790a57d82a74437ba36721aa79"
     },
     {
       "file": "docs/design/public-media-language.md",
-      "sha256": "36a243416be82f0add852de4e17a8cb800b0e6df4b10cdb96c4f6350f50e9771"
+      "sha256": "a4d11c1269dd14da37e0a989f8350d4f9ac49a6ffeaef24656f445bdb0ede6a9"
     },
     {
       "file": "ui/editor.html",
@@ -190,120 +200,120 @@
   "artifacts": [
     {
       "file": "README.md",
-      "bytes": 4197,
-      "sha256": "996156b2ac2c7f94d65816ffc72fc875a048dedcc9069abf12ef327306b183b7"
+      "bytes": 4542,
+      "sha256": "5d6b095352de3464e16b5c7e139dc797ff432c096799c3953690aae756a4428b"
     },
     {
       "file": "codex-text-control-overview.mp4",
-      "bytes": 10641173,
-      "sha256": "86865c30f4bfcddaace5dee3bcc26ec21365a8fb8542c819a67faed0955d8a9b"
+      "bytes": 10355222,
+      "sha256": "cf76c97f8ae8152478670934007532e960cc10d677635dd719f031afac3b31f3"
     },
     {
       "file": "codex-text-control-overview-cover.png",
-      "bytes": 113633,
-      "sha256": "5a5b92ceb5dd4c37e06dd55b8fe701773edde353bdc700ec172ba798f0d861e6"
+      "bytes": 79681,
+      "sha256": "023a26cfa2aae4b5705cd4f19e123710fc5ba72864a54cbe1639c1a1b0f1efd4"
     },
     {
-      "file": "codex-text-control-overview.en.ass",
-      "bytes": 3250,
-      "sha256": "ae09a24281dae5ab64d0e36ae11cb9291a6615d51cc10cfcf714213997775b59"
+      "file": "codex-text-control-overview.zh-CN.ass",
+      "bytes": 2667,
+      "sha256": "820c58e25f288eed3d6501ecaebae9c09691387a43fa21a5464621b00cb41687"
     },
     {
-      "file": "transcript.en.md",
-      "bytes": 3373,
-      "sha256": "187d74f687fbc30e15261dcb3ff1c980b3b4e8568b7b67fd865c10a3521b32d0"
+      "file": "transcript.en-zh-CN.md",
+      "bytes": 5593,
+      "sha256": "85bc364daa226066cf871ae4a676e712978e21e50daba3f1bf7c0269f9f297a9"
     }
   ],
   "qaFrames": [
     {
-      "scene": "intro",
-      "file": "tmp/github-promo/generated/qa-01-intro.png",
-      "bytes": 414441,
-      "sha256": "a92fd8c12d4ac3bbdd8d46a231eb7c373e12b79594dc3636048774ca2cb21709"
+      "scene": "repetition",
+      "file": "tmp/github-promo/generated/qa-01-repetition.png",
+      "bytes": 402451,
+      "sha256": "7ed75c13f26253765c42d3a08a9aa5372d745ab74c282ab741892ec9adcc4110"
     },
     {
-      "scene": "fragmentation",
-      "file": "tmp/github-promo/generated/qa-02-fragmentation.png",
-      "bytes": 438955,
-      "sha256": "26666983b9a2616e6e648aec0b62f198293835cfb2abb7cec5096349fec23b30"
+      "scene": "small-edit",
+      "file": "tmp/github-promo/generated/qa-02-small-edit.png",
+      "bytes": 346438,
+      "sha256": "6d1b048de060c66c0c4088e4e0a9fa5dd2e67070c976218ebbd6ec09ae3b8551"
     },
     {
-      "scene": "precision",
-      "file": "tmp/github-promo/generated/qa-03-precision.png",
-      "bytes": 373479,
-      "sha256": "a356b291e2604fff87137a8547081f6bf0927b5072fd93ac30b0ccf51b5730da"
+      "scene": "which-version",
+      "file": "tmp/github-promo/generated/qa-03-which-version.png",
+      "bytes": 363877,
+      "sha256": "1316cfb6458c325fe9933faaa201c3aae131a3961978e755ebc45b8bc6e4df3e"
     },
     {
-      "scene": "authority",
-      "file": "tmp/github-promo/generated/qa-04-authority.png",
-      "bytes": 455087,
-      "sha256": "fd2474f945c37c84cfdef0df7d7ee9f67c35677e08d29e1cf8d0a0c420146ddc"
+      "scene": "solution",
+      "file": "tmp/github-promo/generated/qa-04-solution.png",
+      "bytes": 453203,
+      "sha256": "ba94e148085777ea7bef0094f5a0632bd125207918fdfb2c1e5df0cce8f494b0"
     },
     {
       "scene": "open",
       "file": "tmp/github-promo/generated/qa-05-open.png",
-      "bytes": 345703,
-      "sha256": "1a9afc3c121960d8cf07ffd0c4ac3aaea33461fdfc8d9788227fa033e91bb64f"
+      "bytes": 326052,
+      "sha256": "ba0f7e27ac33da1637a941e4732188de61f5470cc5f1e142bc4f38850e1d3426"
     },
     {
       "scene": "edit-text",
       "file": "tmp/github-promo/generated/qa-06-edit-text.png",
-      "bytes": 434744,
-      "sha256": "414d2c07641c2efea691502825f48cbad53df6b236e7d69d6a117618d80f1b6d"
+      "bytes": 416477,
+      "sha256": "aa2b1df4013783af2c41440ec90ff202728959f379c948eacee1a6bf2c3206c8"
     },
     {
       "scene": "edit-table",
       "file": "tmp/github-promo/generated/qa-07-edit-table.png",
-      "bytes": 436674,
-      "sha256": "4f8a9e9bbac7f2e86655cf8ad5fa8fe19d98fa972a1851513b5f5d80d1c02853"
+      "bytes": 417027,
+      "sha256": "2811d3fc1accdcdbe052a4daa6c3d8a1426109e5f5e6e867037dc5dd17b1b3b6"
     },
     {
       "scene": "source",
       "file": "tmp/github-promo/generated/qa-08-source.png",
-      "bytes": 453480,
-      "sha256": "61bf11ca37a9ce9c3e9d126f63773b0729e53182123dca20ffceb89c8fe65034"
+      "bytes": 427387,
+      "sha256": "da27a29a3c81f78087ad9c869c739d6eb95033ec0c3cc81c305af4f2213e04c9"
     },
     {
       "scene": "review",
       "file": "tmp/github-promo/generated/qa-09-review.png",
-      "bytes": 471589,
-      "sha256": "68adc1a76cb79650dac7644f6ee6ea99966c10a112f54729c3b6d4d42a8be190"
+      "bytes": 455350,
+      "sha256": "8ab28447d1af214cc40c10d0a3e7af87fe2c0f212d50cf46f7ed5a1640348096"
     },
     {
       "scene": "return",
       "file": "tmp/github-promo/generated/qa-10-return.png",
-      "bytes": 456113,
-      "sha256": "a0d7770d6bad97c5cc5edb46962edf0a8eea65d9ee75cf02d3a518c156f5ec87"
+      "bytes": 433675,
+      "sha256": "35e17890fc32f773d6887a059934a4cc34eec14d3570ecd7fab58225d495bc11"
     },
     {
       "scene": "commit",
       "file": "tmp/github-promo/generated/qa-11-commit.png",
-      "bytes": 445211,
-      "sha256": "6cc67f33a992f1136c990d3c590028f694a5c884ac32eaec2875be181ecbaec2"
+      "bytes": 417012,
+      "sha256": "5653d95d231d9d3aadbb2543185635bd2c29ee25414cd5f3c2adada42c9c4c58"
     },
     {
       "scene": "notification",
       "file": "tmp/github-promo/generated/qa-12-notification.png",
-      "bytes": 468683,
-      "sha256": "3d0e79f837bb65b921491838b95fffea413cb44c629c878dc4c6f148925c11e8"
+      "bytes": 432173,
+      "sha256": "073834639ed5328b9fc8aadd197c91c51ce6bd3ba001e8a9a36dcf5c2d1da92a"
     },
     {
       "scene": "history",
       "file": "tmp/github-promo/generated/qa-13-history.png",
-      "bytes": 498203,
-      "sha256": "d05891d658bebf6d29b0ff0fca93fdeb06a64af85063fcf1e130ff37a2d26fcb"
+      "bytes": 475548,
+      "sha256": "15c660ee0a213095b5aa0bff0d9bd01a77b5c55d52f361ccbb864c0a0ee1095e"
     },
     {
       "scene": "reread",
       "file": "tmp/github-promo/generated/qa-14-reread.png",
-      "bytes": 351435,
-      "sha256": "d24630795c30de029fa7b411bc75d80e7e549ab1d82138676e2048180baab593"
+      "bytes": 328894,
+      "sha256": "47801244c778647307dbf89d685176aa73ed6b4a245342dc2620794036e366f2"
     },
     {
       "scene": "outro",
       "file": "tmp/github-promo/generated/qa-15-outro.png",
-      "bytes": 439943,
-      "sha256": "0c351ce0f097096c76598712cd014ea6d633428156e1e90e8255dc44bc88e2a5"
+      "bytes": 365591,
+      "sha256": "6959f1f5850de26536f28ad5354e1bb6ba9b7adac10ee13378868b72ae04b8b8"
     }
   ],
   "verifiedClaims": [
@@ -313,7 +323,8 @@
   ],
   "limitations": [
     "Product screens are generated from the current source with a simulated Codex bridge; they are not a Codex host recording.",
-    "The demo harness replaces visible labels for English-only public media; it does not claim product localization.",
+    "The demo harness uses English visible labels and English narration with Simplified Chinese subtitles; it does not claim product localization.",
+    "The subtitle code-point gate verifies channel separation and Chinese text presence, not translation quality.",
     "Version 0.5.8 remains a source candidate and has not inherited the 0.5.7 real-host result.",
     "No external authoritative capability benchmark currently fits this Codex context-canvas workflow."
   ]

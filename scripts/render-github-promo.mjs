@@ -17,8 +17,10 @@ import { arch as osArch, release as osRelease, version as osVersion } from "node
 import {
   PUBLIC_ASSET_NAMES,
   PUBLIC_MEDIA_LOCALE,
+  PUBLIC_SUBTITLE_LOCALE,
   UI_DEMO_LABEL,
-  collectPublicText,
+  collectEnglishPublicText,
+  collectSubtitleText,
   editedMarkdown,
   githubActionsEvidence,
   originalMarkdown,
@@ -26,7 +28,7 @@ import {
   sharedCopy,
 } from "./promo-content.mjs";
 import { escapeHtml, serializeForInlineScript } from "./promo-html.mjs";
-import { assertEnglishOnly } from "./public-media-guard.mjs";
+import { assertChineseSubtitles, assertEnglishOnly } from "./public-media-guard.mjs";
 import { publishDirectoryAtomically } from "./public-media-publisher.mjs";
 
 const scriptsDir = dirname(fileURLToPath(import.meta.url));
@@ -399,7 +401,7 @@ function sceneBody(scene, uiUrl) {
     body: escapeHtml(scene.body),
   };
   const image = uiImage(uiUrl);
-  if (scene.stage === "intro") return `
+  if (scene.stage === "solution-intro") return `
     <section style="display:grid;grid-template-columns:700px 1fr;gap:58px;align-items:center;height:790px;">
       <div><div class="tag">${scene.eyebrow}</div><h1 style="margin-top:24px;">${scene.title}</h1><p class="muted" style="margin-top:26px;max-width:650px;">${scene.body}</p></div>
       <div style="height:680px;">${image}</div>
@@ -409,10 +411,10 @@ function sceneBody(scene, uiUrl) {
       <div><div class="eyebrow">${scene.eyebrow}</div><h1>${scene.title}</h1><p class="muted" style="margin-top:28px;">${scene.body}</p></div>
       <div style="border-left:2px solid #c8d0d8;padding-left:52px;">
         ${[
-          ["01", "Keep the real user loop"],
-          ["02", "Add evidence limits"],
-          ["03", "Make the table editable"],
-          ["?", "Which message is final?"],
+          ["01", "Make the report shorter"],
+          ["02", "Keep the evidence table"],
+          ["03", "Use English labels"],
+          ["?", "Which instruction is current?"],
         ].map(([number, text], index) => `<div style="display:grid;grid-template-columns:58px 1fr;gap:18px;padding:22px 0;border-bottom:1px solid #c8d0d8;"><strong style="color:${index === 3 ? "#b42318" : "#2374c6"};font-size:22px;">${number}</strong><span style="font-size:27px;font-weight:${index === 3 ? 800 : 600};">${text}</span></div>`).join("")}
       </div>
     </section>`;
@@ -428,9 +430,10 @@ function sceneBody(scene, uiUrl) {
   if (scene.stage === "problem-authority") return `
     <section style="display:grid;grid-template-rows:auto 1fr;gap:42px;height:790px;">
       <div><div class="eyebrow">${scene.eyebrow}</div><h1>${scene.title}</h1></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border:2px solid #111827;background:#fff;">
-        <div style="padding:48px;border-right:2px solid #111827;"><div class="blue" style="font-size:24px;font-weight:800;">CHAT</div><h2 style="margin-top:20px;">Explore, compare, revise</h2><p class="muted" style="margin-top:26px;">Useful conversation can stay messy while ideas are still changing.</p></div>
-        <div style="padding:48px;"><div class="green" style="font-size:24px;font-weight:800;">AUTHORITATIVE CONTEXT</div><h2 style="margin-top:20px;">One reviewed current version</h2><p class="muted" style="margin-top:26px;">Only user-confirmed text becomes the context future answers should follow.</p></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;align-items:stretch;">
+        <div style="padding:38px;border-top:4px solid #2374c6;background:#fff;"><div class="blue" style="font-size:21px;font-weight:800;">MORNING</div><h2 style="margin-top:24px;font-size:32px;">Use the first draft</h2><p class="muted" style="margin-top:22px;font-size:21px;">A complete version is pasted into chat.</p></div>
+        <div style="padding:38px;border-top:4px solid #2374c6;background:#fff;"><div class="blue" style="font-size:21px;font-weight:800;">AFTERNOON</div><h2 style="margin-top:24px;font-size:32px;">Except for three changes</h2><p class="muted" style="margin-top:22px;font-size:21px;">Corrections arrive as separate messages.</p></div>
+        <div style="padding:38px;border-top:4px solid #b42318;background:#fff;"><div class="red" style="font-size:21px;font-weight:800;">NEXT ANSWER</div><h2 style="margin-top:24px;font-size:32px;">Which version wins?</h2><p class="muted" style="margin-top:22px;font-size:21px;">The chat contains every draft, but no clear current one.</p></div>
       </div>
     </section>`;
   if (scene.stage === "use-open") return `
@@ -506,9 +509,10 @@ function sceneBody(scene, uiUrl) {
 async function renderSceneFrames(uiPaths) {
   const scenePaths = [];
   for (const scene of scenes) {
+    const { subtitleZh: _subtitleZh, ...englishScene } = scene;
     const uiUrl = pathToFileURL(uiPaths[scene.uiState]).href;
     const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><style>${commonSceneCss()}</style></head><body><div class="stage"><header class="mast"><span class="brand">${escapeHtml(sharedCopy.product)}</span><span class="proof">${escapeHtml(sharedCopy.candidate)}</span></header>${sceneBody(scene, uiUrl)}<footer class="footer"><span>${escapeHtml(sharedCopy.footer)}</span><span>${escapeHtml(sharedCopy.repository)}</span></footer></div></body></html>`;
-    assertEnglishOnly([scene, sharedCopy, UI_DEMO_LABEL], `scene ${scene.id}`);
+    assertEnglishOnly([englishScene, sharedCopy, UI_DEMO_LABEL], `scene ${scene.id}`);
     assertEnglishOnly(html.replaceAll(uiUrl, ""), `visible scene template ${scene.id}`);
     const htmlPath = join(generatedDir, `scene-${scene.id}.html`);
     const pngPath = join(generatedDir, `scene-${scene.id}.png`);
@@ -577,12 +581,18 @@ function firstOutputLine(result) {
 async function probeRenderEnvironment() {
   const windowsMetadataScript = `$ErrorActionPreference='Stop'
 $chrome=Get-Item ${psQuote(chromePath)}
-$font=Join-Path $env:WINDIR 'Fonts\\arial.ttf'
-if(-not (Test-Path $font)){throw 'Arial font file is not installed.'}
-$item=Get-Item $font
+$primaryFont=Join-Path $env:WINDIR 'Fonts\\arial.ttf'
+$subtitleFont=Join-Path $env:WINDIR 'Fonts\\msyh.ttc'
+if(-not (Test-Path $primaryFont)){throw 'Arial font file is not installed.'}
+if(-not (Test-Path $subtitleFont)){throw 'Microsoft YaHei font file is not installed.'}
+$primaryItem=Get-Item $primaryFont
+$subtitleItem=Get-Item $subtitleFont
 [pscustomobject]@{
   chrome=('Google Chrome ' + $chrome.VersionInfo.ProductVersion)
-  font=[pscustomobject]@{family='Arial';file=$item.Name;fileVersion=$item.VersionInfo.FileVersion}
+  font=[pscustomobject]@{
+    primary=[pscustomobject]@{family='Arial';file=$primaryItem.Name;fileVersion=$primaryItem.VersionInfo.FileVersion}
+    subtitles=[pscustomobject]@{family='Microsoft YaHei';file=$subtitleItem.Name;fileVersion=$subtitleItem.VersionInfo.FileVersion}
+  }
 } | ConvertTo-Json -Compress`;
   const encodedMetadataScript = Buffer.from(windowsMetadataScript, "utf16le").toString("base64");
   const [ffmpeg, ffprobe, windowsMetadata] = await Promise.all([
@@ -628,29 +638,18 @@ function assTime(seconds) {
   return `${hours}:${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}.${String(cs).padStart(2, "0")}`;
 }
 
-function subtitleText(text, maxLineLength = 54) {
-  const words = text.split(/\s+/u);
-  const lines = [];
-  let currentLine = "";
-  for (const word of words) {
-    const candidate = `${currentLine} ${word}`.trim();
-    if (candidate.length <= maxLineLength) {
-      currentLine = candidate;
-      continue;
+function subtitleText(text, maxLineLength = 20) {
+  const lines = text.split(/\r?\n/u).flatMap((explicitLine) => {
+    const characters = Array.from(explicitLine.trim());
+    const wrapped = [];
+    for (let offset = 0; offset < characters.length; offset += maxLineLength) {
+      wrapped.push(characters.slice(offset, offset + maxLineLength).join(""));
     }
-    if (currentLine) lines.push(currentLine);
-    if (word.length <= maxLineLength) {
-      currentLine = word;
-      continue;
-    }
-    for (let offset = 0; offset < word.length; offset += maxLineLength) {
-      const chunk = word.slice(offset, offset + maxLineLength);
-      if (chunk.length === maxLineLength) lines.push(chunk);
-      else currentLine = chunk;
-    }
-  }
-  if (currentLine) lines.push(currentLine);
-  return lines.join("\\N");
+    return wrapped;
+  });
+  return lines
+    .map((line) => line.replaceAll("\\", "\\\\").replaceAll("{", "\\{").replaceAll("}", "\\}"))
+    .join("\\N");
 }
 
 async function writeSubtitlesAndTranscript(durations, voiceDurations) {
@@ -660,8 +659,8 @@ async function writeSubtitlesAndTranscript(durations, voiceDurations) {
   for (let index = 0; index < scenes.length; index += 1) {
     const start = cursor + 0.28;
     const end = Math.min(cursor + durations[index] - 0.25, start + voiceDurations[index] + 0.55);
-    events.push(`Dialogue: 0,${assTime(start)},${assTime(end)},Default,,0,0,0,,${subtitleText(scenes[index].narration)}`);
-    transcriptRows.push(`## ${assTime(cursor)} · ${scenes[index].title}\n\n${scenes[index].narration}`);
+    events.push(`Dialogue: 0,${assTime(start)},${assTime(end)},Default,,0,0,0,,${subtitleText(scenes[index].subtitleZh)}`);
+    transcriptRows.push(`## ${assTime(cursor)} · ${scenes[index].title}\n\n**English narration**\n\n${scenes[index].narration}\n\n**Simplified Chinese subtitles**\n\n${scenes[index].subtitleZh}`);
     cursor += durations[index];
   }
   const ass = `[Script Info]
@@ -674,15 +673,16 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name,Fontname,Fontsize,PrimaryColour,SecondaryColour,OutlineColour,BackColour,Bold,Italic,Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,Outline,Shadow,Alignment,MarginL,MarginR,MarginV,Encoding
-Style: Default,Arial,36,&H00FFFFFF,&H00FFFFFF,&H00111827,&H98000000,0,0,0,0,100,100,0,0,3,1,0,2,90,90,70,1
+Style: Default,Microsoft YaHei,44,&H00FFFFFF,&H00FFFFFF,&H00111827,&HA0000000,0,0,0,0,100,100,0,0,3,2,0,2,100,100,112,1
 
 [Events]
 Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
 ${events.join("\n")}
 `;
-  const transcript = `# Codex Text Control Overview Transcript
+  const transcript = `# Codex Text Control Bilingual Transcript
 
-- Language: English (United States)
+- Narration language: English (United States)
+- Subtitle language: Simplified Chinese (China)
 - Source status: 0.5.8 source candidate
 - Screen label: ${UI_DEMO_LABEL}
 
@@ -692,7 +692,8 @@ ${transcriptRows.join("\n\n")}
 
 The interface screens are generated from the current product source with a simulated Codex bridge. They are not a recording of the Codex host. The repository evidence supports 74/74 automated tests, 5/5 GitHub Actions jobs, and an MIT license. It does not establish production readiness, cross-platform host support, or an external capability benchmark.
 `;
-  assertEnglishOnly([ass, transcript], "subtitles and transcript");
+  assertEnglishOnly(scenes.map((scene) => scene.narration), "English narration");
+  assertChineseSubtitles(scenes.map((scene) => scene.subtitleZh), "Simplified Chinese subtitles");
   await Promise.all([
     writeFile(tempSubtitles, ass, "utf8"),
     writeFile(tempTranscript, transcript, "utf8"),
@@ -704,13 +705,13 @@ async function writeMediaReadme() {
 
 [![Watch the Codex Text Control overview](codex-text-control-overview-cover.png)](codex-text-control-overview.mp4)
 
-**[Watch the English overview](codex-text-control-overview.mp4)**
+**[Watch the English-narrated overview with Simplified Chinese subtitles](codex-text-control-overview.mp4)**
 
 ## Purpose
 
-This media package explains why chat alone is a poor place to maintain accepted context, then demonstrates the complete user-confirmed workflow in Codex Text Control.
+This media package starts with common problems from real project chats, then introduces Codex Text Control and demonstrates the complete user-confirmed workflow.
 
-The problem section covers fragmented amendments, precise one-cell table changes, and the boundary between discussion and accepted context. The usage section shows opening the canvas, editing text, editing a table cell, switching to Markdown source, reviewing the complete draft, returning without saving, confirming one immutable revision, receiving the revision ID in the conversation, inspecting history, and re-reading the accepted revision before the next answer.
+The problem section covers repeated requirements, a one-cell edit that causes a full rewrite, and uncertainty about which version the next answer should follow. The solution section then shows opening the canvas, editing text, editing one table cell, switching to Markdown source, reviewing the complete draft, returning without saving, confirming one immutable revision, receiving only the revision ID in chat, inspecting history, and re-reading the accepted revision before the next answer.
 
 ## Files
 
@@ -718,8 +719,8 @@ The problem section covers fragmented amendments, precise one-cell table changes
 | --- | --- | --- | --- |
 | [\`codex-text-control-overview.mp4\`](codex-text-control-overview.mp4) | Main product overview | Rendered scenes, narration, and subtitles | 1920x1080 H.264 and AAC video |
 | [\`codex-text-control-overview-cover.png\`](codex-text-control-overview-cover.png) | GitHub preview image | Intro scene | 1920x1080 PNG |
-| [\`codex-text-control-overview.en.ass\`](codex-text-control-overview.en.ass) | Editable subtitle source | Scene narration and measured timing | Advanced SubStation Alpha subtitle file |
-| [\`transcript.en.md\`](transcript.en.md) | Accessible text alternative | Scene narration | Timestamped English transcript |
+| [\`${PUBLIC_ASSET_NAMES.subtitles}\`](${PUBLIC_ASSET_NAMES.subtitles}) | Editable subtitle source | Human-reviewed Simplified Chinese scene subtitles and measured timing | Advanced SubStation Alpha subtitle file |
+| [\`${PUBLIC_ASSET_NAMES.transcript}\`](${PUBLIC_ASSET_NAMES.transcript}) | Accessible text alternative | English narration and Simplified Chinese subtitles | Timestamped bilingual transcript |
 | [\`render-report.json\`](render-report.json) | Reproducibility evidence | Source hashes, tool versions, media probes, and public artifacts | Machine-readable report |
 
 ## Reproduce
@@ -733,11 +734,11 @@ npm run render:promo:github
 
 Inputs are [\`scripts/promo-content.mjs\`](../../../scripts/promo-content.mjs), [\`scripts/public-media-guard.mjs\`](../../../scripts/public-media-guard.mjs), [\`scripts/render-github-promo.mjs\`](../../../scripts/render-github-promo.mjs), and the current files in [\`ui/\`](../../../ui/). Temporary frames, audio, and segments are written under the ignored \`tmp/github-promo/\` directory. Publication replaces this complete directory only after every check passes.
 
-Dependencies are Node.js 22 or newer, Google Chrome, FFmpeg, FFprobe, Windows speech synthesis, and an enabled English voice. The exact verified environment is recorded in [\`render-report.json\`](render-report.json).
+Dependencies are Node.js 22 or newer, Google Chrome, FFmpeg, FFprobe, Windows speech synthesis, an enabled English voice, and Microsoft YaHei for Simplified Chinese subtitles. The exact verified environment is recorded in [\`render-report.json\`](render-report.json).
 
 ## Verification
 
-The render rejects public characters outside printable ASCII and the middle dot used by the demonstration label. It checks storyboard copy, hardcoded scene copy, visible product text, form values, accessibility labels, subtitles, transcript, package documentation, and report metadata. Every public artifact is bound to a byte size and SHA-256 digest in the report.
+The render keeps visible UI, narration, filenames, metadata, and package copy on the English channel. A separate gate requires Chinese text in every subtitle and rejects unrelated scripts. The story-order check requires three everyday problem scenes before the tool appears. Every public artifact is bound to a byte size and SHA-256 digest in the report.
 
 The verified GitHub Actions evidence is run [\`${githubActionsEvidence.runId}\`](${githubActionsEvidence.url}), commit \`${githubActionsEvidence.headSha}\`, observed ${githubActionsEvidence.observedAt}, with ${githubActionsEvidence.jobsPassed}/${githubActionsEvidence.jobsTotal} jobs passing and conclusion \`${githubActionsEvidence.conclusion}\`.
 
@@ -745,11 +746,12 @@ The verified GitHub Actions evidence is run [\`${githubActionsEvidence.runId}\`]
 
 - Product screens come from the current UI source with a simulated Codex bridge. They are labeled \`${UI_DEMO_LABEL}\` and are not a real Codex host recording.
 - English labels belong to the demonstration harness and do not claim product localization.
+- Simplified Chinese subtitles are written and reviewed as text; the code-point gate cannot prove translation quality by itself.
 - Version 0.5.8 remains a source candidate. The video does not claim production readiness, one-click installation, industry leadership, or cross-platform host support.
 - The repository evidence supports 74/74 product tests before this media-only change, 5/5 jobs in the cited GitHub Actions run, and an MIT license. It does not provide an external authoritative capability benchmark for this workflow.
 - Rendering is semantically reproducible, but compatible browser, voice, font, and codec versions may produce different bytes.
 
-Objective assessment: the package explains both the user problem and the full confirmation loop with inspectable source and artifact evidence. It remains a source-generated demonstration, not independent user validation.
+Objective assessment: the package now leads with recognizable user problems, explains what the tool changes, and then proves that explanation through the full workflow. It remains a source-generated demonstration, not independent user validation.
 `;
   assertEnglishOnly(readme, "media package README");
   await writeFile(tempReadme, readme, "utf8");
@@ -863,7 +865,8 @@ async function makeReport({ durations, voiceDurations, voice, qaFrames, language
   const report = {
     generatedAt: new Date().toISOString(),
     locale: PUBLIC_MEDIA_LOCALE,
-    purpose: "Explain why authoritative context needs a direct editing surface and demonstrate the complete user-confirmed revision loop.",
+    subtitleLocale: PUBLIC_SUBTITLE_LOCALE,
+    purpose: "Start with common chat problems, then show how one editable accepted version solves them through a complete user-confirmed revision loop.",
     source: {
       productSourceHead,
       identity: "input-hashes-authoritative",
@@ -906,6 +909,8 @@ async function makeReport({ durations, voiceDurations, voice, qaFrames, language
     },
     languageGate: {
       publicCopy: "passed",
+      englishNarration: "passed",
+      simplifiedChineseSubtitles: "passed",
       renderedVisibleUi: languageChecks,
     },
     inputs: await Promise.all(inputs.map(async (path) => ({
@@ -936,7 +941,8 @@ async function makeReport({ durations, voiceDurations, voice, qaFrames, language
     ],
     limitations: [
       "Product screens are generated from the current source with a simulated Codex bridge; they are not a Codex host recording.",
-      "The demo harness replaces visible labels for English-only public media; it does not claim product localization.",
+      "The demo harness uses English visible labels and English narration with Simplified Chinese subtitles; it does not claim product localization.",
+      "The subtitle code-point gate verifies channel separation and Chinese text presence, not translation quality.",
       "Version 0.5.8 remains a source candidate and has not inherited the 0.5.7 real-host result.",
       "No external authoritative capability benchmark currently fits this Codex context-canvas workflow.",
     ],
@@ -947,7 +953,8 @@ async function makeReport({ durations, voiceDurations, voice, qaFrames, language
 }
 
 async function main() {
-  assertEnglishOnly(collectPublicText(), "public storyboard copy");
+  assertEnglishOnly(collectEnglishPublicText(), "English public storyboard copy");
+  assertChineseSubtitles(collectSubtitleText(), "Simplified Chinese storyboard subtitles");
   await Promise.all([
     ensurePath(join(uiDir, "editor.html"), "Product editor"),
     process.platform === "win32" ? ensurePath(chromePath, "Google Chrome") : Promise.resolve(),

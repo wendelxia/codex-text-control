@@ -25,7 +25,7 @@
   </a>
 </p>
 
-<p align="center"><strong><a href="docs/media/codex-text-control-overview/codex-text-control-overview.mp4">Watch the English overview: why it exists and the complete editing workflow</a></strong></p>
+<p align="center"><strong><a href="docs/media/codex-text-control-overview/codex-text-control-overview.mp4">Watch the English-narrated overview with Simplified Chinese subtitles</a></strong></p>
 <!-- PUBLIC_MEDIA:END -->
 
 ![Codex Text Control 主画布：直接编辑文字和 Markdown 表格](docs/evidence/screenshots/context-canvas-0.5.5-desktop-focused.png)

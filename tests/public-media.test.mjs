@@ -8,11 +8,13 @@ import { createHash } from "node:crypto";
 import {
   PUBLIC_ASSET_NAMES,
   PUBLIC_MEDIA_LOCALE,
+  PUBLIC_SUBTITLE_LOCALE,
   REQUIRED_STORY_STAGES,
-  collectPublicText,
+  collectEnglishPublicText,
+  collectSubtitleText,
   scenes,
 } from "../scripts/promo-content.mjs";
-import { assertEnglishOnly } from "../scripts/public-media-guard.mjs";
+import { assertChineseSubtitles, assertEnglishOnly } from "../scripts/public-media-guard.mjs";
 import { escapeHtml, serializeForInlineScript } from "../scripts/promo-html.mjs";
 import { publishDirectoryAtomically } from "../scripts/public-media-publisher.mjs";
 
@@ -48,36 +50,49 @@ async function createPublishFixture(t) {
   return { root, sourceDir, destinationDir, filenames: ["README.md", "overview.mp4"] };
 }
 
-test("GitHub promotional assets use English-only public copy and filenames", () => {
+test("GitHub promotional media uses English primary content with Simplified Chinese subtitles", () => {
   assert.equal(PUBLIC_MEDIA_LOCALE, "en-US");
+  assert.equal(PUBLIC_SUBTITLE_LOCALE, "zh-CN");
+  assert.equal(PUBLIC_ASSET_NAMES.subtitles, "codex-text-control-overview.zh-CN.ass");
+  assert.equal(PUBLIC_ASSET_NAMES.transcript, "transcript.en-zh-CN.md");
   for (const filename of Object.values(PUBLIC_ASSET_NAMES)) {
-    assert.match(filename, /^[a-z0-9][a-z0-9._-]*$/);
+    assert.match(filename, /^[A-Za-z0-9][A-Za-z0-9._-]*$/);
     assert.doesNotMatch(filename, cjkPattern);
   }
-  for (const value of collectPublicText()) {
-    assert.doesNotMatch(value, cjkPattern, `CJK text reached a public media surface: ${value}`);
+  for (const value of collectEnglishPublicText()) {
+    assert.doesNotMatch(value, cjkPattern, `CJK text reached an English media surface: ${value}`);
+  }
+  for (const subtitle of collectSubtitleText()) {
+    assert.match(subtitle, /[\u3400-\u4dbf\u4e00-\u9fff]/u, `Chinese subtitle is missing: ${subtitle}`);
   }
 });
 
-test("the expanded storyboard explains the need and demonstrates the full confirmation loop", () => {
+test("the storyboard starts with everyday problems before introducing the tool and its solution", () => {
   const stageIds = scenes.map((scene) => scene.stage);
   assert.deepEqual(stageIds, REQUIRED_STORY_STAGES, "Required stages must be unique and remain in workflow order.");
 
   assert.ok(scenes.length >= 12, "The usage demonstration needs enough distinct states to be inspectable.");
-  assert.ok(
-    scenes.filter((scene) => scene.stage.startsWith("problem-")).length >= 2,
-    "The video must explain more than one concrete problem with chat-only context maintenance.",
-  );
+  assert.ok(stageIds.slice(0, 3).every((stage) => stage.startsWith("problem-")), "The first three scenes must be everyday problems.");
+  const solutionIndex = stageIds.indexOf("solution-intro");
+  assert.equal(solutionIndex, 3, "The tool must appear only after the three problem scenes.");
   assert.ok(
     scenes.filter((scene) => scene.stage.startsWith("use-")).length >= 9,
     "The video must show opening, editing, source mode, review, return, commit, notification, history, and re-read.",
   );
+
+  const problemCopy = scenes.slice(0, solutionIndex).flatMap(({ title, body, narration }) => [title, body, narration]).join("\n");
+  assert.match(problemCopy, /same requirement/i);
+  assert.match(problemCopy, /one (?:table )?cell/i);
+  assert.match(problemCopy, /which version/i);
+
+  const solutionCopy = scenes.slice(solutionIndex).flatMap(({ title, body, narration }) => [title, body, narration]).join("\n");
+  assert.match(solutionCopy, /Codex Text Control/);
+  assert.match(solutionCopy, /canvas/i);
+  assert.match(solutionCopy, /reviewed|confirmed/i);
 });
 
 test("the storyboard keeps evidence claims within the verified project boundary", () => {
-  const allCopy = collectPublicText().join("\n");
-  assert.match(allCopy, /74\/74 product tests/);
-  assert.match(allCopy, /5\/5 GitHub Actions jobs/);
+  const allCopy = collectEnglishPublicText().join("\n");
   assert.match(allCopy, /source candidate/i);
   assert.match(allCopy, /UI demonstration · current source/);
   assert.doesNotMatch(allCopy, /production[- ]ready|industry[- ]leading|one[- ]click install/i);
@@ -97,6 +112,18 @@ test("the public-media guard rejects CJK text before rendering or publishing", (
   }
 });
 
+test("the subtitle guard requires Chinese text and rejects unrelated scripts", () => {
+  assert.doesNotThrow(() => assertChineseSubtitles(["聊天负责讨论，画布保存最终版本。"], "test subtitles"));
+  assert.throws(
+    () => assertChineseSubtitles(["English subtitle only"], "test subtitles"),
+    /has no Chinese text/,
+  );
+  assert.throws(
+    () => assertChineseSubtitles(["中文字幕と日本語"], "test subtitles"),
+    /unsupported U\+3068/,
+  );
+});
+
 test("promotional HTML escapes visible copy and cannot close an inline script", () => {
   assert.equal(
     escapeHtml(`A < B & "quoted" 'value'`),
@@ -107,7 +134,7 @@ test("promotional HTML escapes visible copy and cannot close an inline script", 
   assert.deepEqual(JSON.parse(serialized), { text: "</script><section>safe copy</section>" });
 });
 
-test("tracked public media metadata, subtitles, and accompanying copy are English-only", async () => {
+test("tracked public media keeps English documentation and Chinese subtitle artifacts in their declared channels", async () => {
   const mediaDir = join(process.cwd(), "docs", "media", "codex-text-control-overview");
   const filenames = await readdir(mediaDir);
   assert.deepEqual(
@@ -119,7 +146,11 @@ test("tracked public media metadata, subtitles, and accompanying copy are Englis
     assert.doesNotMatch(filename, cjkPattern);
     if (!/\.(?:ass|json|md)$/u.test(filename)) continue;
     const content = await readFile(join(mediaDir, filename), "utf8");
-    assert.doesNotMatch(content, cjkPattern, `CJK text reached the tracked public asset: ${filename}`);
+    if ([PUBLIC_ASSET_NAMES.subtitles, PUBLIC_ASSET_NAMES.transcript].includes(filename)) {
+      assert.match(content, cjkPattern, `Chinese subtitles are missing from ${filename}`);
+    } else {
+      assert.doesNotThrow(() => assertEnglishOnly(content, `English public asset ${filename}`));
+    }
   }
 
   const languageRule = await readFile(join(process.cwd(), "docs", "design", "public-media-language.md"), "utf8");
@@ -131,7 +162,7 @@ test("tracked public media metadata, subtitles, and accompanying copy are Englis
   assert.doesNotThrow(() => assertEnglishOnly(publicBlock, "root README promotional block"));
 });
 
-test("the complete public media tree stays English-only and treats video as binary", async () => {
+test("the complete public media tree keeps bilingual text limited to subtitles and transcript", async () => {
   const mediaRoot = join(process.cwd(), "docs", "media");
   const paths = await listFilesRecursively(mediaRoot);
   assert.ok(paths.includes("README.md"));
@@ -139,13 +170,15 @@ test("the complete public media tree stays English-only and treats video as bina
     assert.doesNotThrow(() => assertEnglishOnly(path.replaceAll("\\", "/"), `public media path ${path}`));
     if (!/\.(?:ass|json|md)$/u.test(path)) continue;
     const content = await readFile(join(mediaRoot, path), "utf8");
-    assert.doesNotThrow(() => assertEnglishOnly(content, `public media file ${path}`));
+    const isBilingualArtifact = path.endsWith(PUBLIC_ASSET_NAMES.subtitles) || path.endsWith(PUBLIC_ASSET_NAMES.transcript);
+    if (isBilingualArtifact) assert.match(content, cjkPattern);
+    else assert.doesNotThrow(() => assertEnglishOnly(content, `English public media file ${path}`));
   }
   const attributes = await readFile(join(process.cwd(), ".gitattributes"), "utf8");
   assert.match(attributes, /^\*\.mp4 binary$/mu);
 });
 
-test("published subtitles keep every explicit line within the readability limit", async () => {
+test("published Chinese subtitles keep every explicit line within the readability limit", async () => {
   const subtitles = await readFile(
     join(process.cwd(), "docs", "media", "codex-text-control-overview", PUBLIC_ASSET_NAMES.subtitles),
     "utf8",
@@ -154,8 +187,11 @@ test("published subtitles keep every explicit line within the readability limit"
     .split(/\r?\n/u)
     .filter((line) => line.startsWith("Dialogue:"))
     .flatMap((line) => line.slice(line.lastIndexOf(",,") + 2).split("\\N"));
-  assert.ok(lines.length > scenes.length, "Long narration should be split into readable subtitle lines.");
-  for (const line of lines) assert.ok(line.length <= 58, `Subtitle line is too long (${line.length}): ${line}`);
+  assert.ok(lines.length > scenes.length, "Chinese subtitles should be split into readable lines.");
+  for (const line of lines) {
+    assert.match(line, cjkPattern, `Subtitle line has no Chinese text: ${line}`);
+    assert.ok(line.length <= 24, `Subtitle line is too long (${line.length}): ${line}`);
+  }
 });
 
 test("the render report binds every public artifact and the exact GitHub Actions evidence", async () => {
@@ -176,6 +212,10 @@ test("the render report binds every public artifact and the exact GitHub Actions
   assert.ok(report.environment.ffmpeg);
   assert.ok(report.environment.ffprobe);
   assert.equal(report.reproducibility.mode, "semantic-not-byte-identical");
+  assert.equal(report.locale, "en-US");
+  assert.equal(report.subtitleLocale, "zh-CN");
+  assert.equal(report.languageGate.englishNarration, "passed");
+  assert.equal(report.languageGate.simplifiedChineseSubtitles, "passed");
   assert.match(report.source.productSourceHead, /^[0-9a-f]{40}$/u);
   assert.equal(report.source.identity, "input-hashes-authoritative");
   assert.equal(Object.hasOwn(report.source, "commit"), false);
