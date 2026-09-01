@@ -1,4 +1,4 @@
 interface:
   display_name: "Codex Text Control"
-  short_description: "Edit replies and commit authoritative context"
-  default_prompt: "Use $codex-text-control to edit a Codex reply, save a revision, or commit the user's confirmed context."
+  short_description: "整理结论稿并直接编辑权威上下文，完成时保存一个版本"
+  default_prompt: "使用 $codex-text-control 整理讨论结论或建议稿，在发送前打开上下文画布让我直接修改。"

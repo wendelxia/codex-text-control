@@ -1,7 +1,7 @@
 {
   "name": "codex-text-control",
-  "version": "0.2.1",
-  "description": "在 Codex 内编辑文本、保存不可变修订，并由用户确认权威上下文。",
+  "version": "0.5.8",
+  "description": "在 Codex 上下文画布中直接编辑文字和表格，并在完成编辑时保存权威版本。",
   "private": true,
   "license": "MIT",
   "type": "module",
@@ -10,7 +10,7 @@
   },
   "scripts": {
     "test": "node --test",
-    "check": "node --check ./mcp/server.mjs && node --check ./mcp/context-storage.mjs && node --check ./mcp/widget-resource.mjs && node --check ./scripts/start-mcp.mjs && node --check ./scripts/probe-mcp.mjs",
+    "check": "node --check ./mcp/server.mjs && node --check ./mcp/context-storage.mjs && node --check ./mcp/context-extensions.mjs && node --check ./mcp/widget-resource.mjs && node --check ./ui/canvas-model.js && node --check ./ui/editor.js && node --check ./scripts/start-mcp.mjs && node --check ./scripts/probe-mcp.mjs",
     "probe:mcp": "node ./scripts/probe-mcp.mjs",
     "quality": "npm test && npm run check && npm run probe:mcp",
     "audit:prod": "npm audit --omit=dev --audit-level=high --registry=https://registry.npmjs.org/",

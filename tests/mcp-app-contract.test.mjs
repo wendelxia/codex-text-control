@@ -1,6 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import vm from "node:vm";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { registerTextControlWidget } from "../mcp/widget-resource.mjs";
@@ -20,13 +23,152 @@ test("保存和提交工具明确允许上下文编辑器调用", async () => {
     const render = tools.find((candidate) => candidate.name === "render_text_control_widget");
     assert.ok(render, "缺少打开编辑器工具。\n");
     assert.deepEqual(render._meta?.ui?.visibility, ["model"], "打开编辑器工具应只由模型调用。\n");
-    for (const name of ["save_text_revision", "commit_authoritative_context"]) {
+    for (const name of ["save_text_revision", "save_context_extension_revision", "commit_authoritative_context", "update_authoritative_context"]) {
       const tool = tools.find((candidate) => candidate.name === name);
       assert.ok(tool, `缺少工具：${name}`);
       assert.equal(tool._meta?.ui?.resourceUri, WIDGET_URI);
       assert.deepEqual(tool._meta?.ui?.visibility, ["app"], `${name} 应只允许应用调用。`);
       assert.equal(tool._meta?.["openai/widgetAccessible"], true);
     }
+  } finally {
+    await client.close();
+  }
+});
+
+test("MCP 工具拒绝缺少项目目录，不能退回插件安装缓存", async () => {
+  const transport = new StdioClientTransport({ command: process.execPath, args: ["./scripts/start-mcp.mjs"] });
+  const client = new Client({ name: "codex-text-control-project-boundary-test", version: "0.5.7" });
+  await client.connect(transport);
+
+  try {
+    const rendered = await client.callTool({ name: "render_text_control_widget", arguments: { sourceText: "短建议" } });
+    assert.equal(rendered.isError, true);
+    assert.match(rendered.content?.[0]?.text || "", /projectDir/);
+  } finally {
+    await client.close();
+  }
+});
+
+test("新项目没有候选正文时拒绝打开空画布", async () => {
+  const projectDir = await mkdtemp(join(tmpdir(), "codex-text-control-empty-render-"));
+  const transport = new StdioClientTransport({ command: process.execPath, args: ["./scripts/start-mcp.mjs"] });
+  const client = new Client({ name: "codex-text-control-empty-render-test", version: "0.5.8" });
+  await client.connect(transport);
+
+  try {
+    const omitted = await client.callTool({
+      name: "render_text_control_widget",
+      arguments: { projectDir, title: "AI Worker 规格" },
+    });
+    assert.equal(omitted.isError, true);
+    assert.match(omitted.content?.[0]?.text || "", /sourceText|候选正文/);
+
+    const whitespace = await client.callTool({
+      name: "render_text_control_widget",
+      arguments: { projectDir, sourceText: " \n\t " },
+    });
+    assert.equal(whitespace.isError, true);
+    assert.match(whitespace.content?.[0]?.text || "", /sourceText|候选正文/);
+  } finally {
+    await client.close();
+    await rm(projectDir, { recursive: true, force: true });
+  }
+});
+
+test("已有权威正文时可以省略候选正文直接打开画布", async () => {
+  const projectDir = await mkdtemp(join(tmpdir(), "codex-text-control-current-render-"));
+  const transport = new StdioClientTransport({ command: process.execPath, args: ["./scripts/start-mcp.mjs"] });
+  const client = new Client({ name: "codex-text-control-current-render-test", version: "0.5.8" });
+  await client.connect(transport);
+
+  try {
+    const content = "已有权威正文";
+    await client.callTool({
+      name: "update_authoritative_context",
+      arguments: { projectDir, content, expectedCurrentRevisionId: null },
+    });
+    const rendered = await client.callTool({
+      name: "render_text_control_widget",
+      arguments: { projectDir },
+    });
+    assert.notEqual(rendered.isError, true);
+    assert.equal(rendered.structuredContent?.sourceText, content);
+  } finally {
+    await client.close();
+    await rm(projectDir, { recursive: true, force: true });
+  }
+});
+
+test("新项目提供非空候选正文时正常打开画布", async () => {
+  const projectDir = await mkdtemp(join(tmpdir(), "codex-text-control-draft-render-"));
+  const transport = new StdioClientTransport({ command: process.execPath, args: ["./scripts/start-mcp.mjs"] });
+  const client = new Client({ name: "codex-text-control-draft-render-test", version: "0.5.8" });
+  await client.connect(transport);
+
+  try {
+    const sourceText = "完整的 AI Worker 候选规格";
+    const rendered = await client.callTool({
+      name: "render_text_control_widget",
+      arguments: { projectDir, sourceText, title: "AI Worker 规格" },
+    });
+    assert.notEqual(rendered.isError, true);
+    assert.equal(rendered.structuredContent?.sourceText, sourceText);
+  } finally {
+    await client.close();
+    await rm(projectDir, { recursive: true, force: true });
+  }
+});
+
+test("画布原子更新返回简短版本通知，不再把全文复制进对话", async () => {
+  const projectDir = await mkdtemp(join(tmpdir(), "codex-text-control-canvas-contract-"));
+  const transport = new StdioClientTransport({ command: process.execPath, args: ["./scripts/start-mcp.mjs"] });
+  const client = new Client({ name: "codex-text-control-canvas-test", version: "0.5.7" });
+  await client.connect(transport);
+
+  try {
+    const secretBody = "只存在于权威上下文中的完整正文";
+    const updated = await client.callTool({
+      name: "update_authoritative_context",
+      arguments: { projectDir, content: secretBody, expectedCurrentRevisionId: null },
+    });
+    const revision = updated.structuredContent?.revision;
+    const followUpMessage = updated.structuredContent?.followUpMessage || "";
+    assert.equal(revision.content, secretBody);
+    assert.match(followUpMessage, /上下文画布已更新/);
+    assert.match(followUpMessage, /正文不在聊天中重复/);
+    assert.match(followUpMessage, new RegExp(revision.id));
+    assert.doesNotMatch(followUpMessage, new RegExp(secretBody));
+
+    const current = await client.callTool({ name: "get_authoritative_context", arguments: { projectDir } });
+    assert.equal(current.structuredContent?.current?.id, revision.id);
+  } finally {
+    await client.close();
+  }
+});
+
+test("扩展点模式只向 Widget 提供块内草稿和受限保存基准", async () => {
+  const projectDir = await mkdtemp(join(tmpdir(), "codex-text-control-extension-contract-"));
+  const transport = new StdioClientTransport({ command: process.execPath, args: ["./scripts/start-mcp.mjs"] });
+  const client = new Client({ name: "codex-text-control-extension-test", version: "0.3.0" });
+  await client.connect(transport);
+
+  try {
+    const content = "固定\n【AI扩展点：补充】\n旧内容\n【/AI扩展点】\n结尾";
+    const saved = await client.callTool({ name: "save_text_revision", arguments: { projectDir, content } });
+    const revisionId = saved.structuredContent?.revision?.id;
+    await client.callTool({ name: "commit_authoritative_context", arguments: { projectDir, revisionId } });
+
+    const rendered = await client.callTool({
+      name: "render_text_control_widget",
+      arguments: { projectDir, extensionPoint: "补充", extensionText: "AI 建议" },
+    });
+    assert.equal(rendered.structuredContent?.mode, "extension");
+    assert.equal(rendered.structuredContent?.sourceText, "AI 建议");
+    assert.deepEqual(rendered.structuredContent?.extension, {
+      name: "补充",
+      baseRevisionId: revisionId,
+      currentContent: "旧内容",
+    });
   } finally {
     await client.close();
   }
