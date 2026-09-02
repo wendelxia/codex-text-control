@@ -11,6 +11,7 @@
 | 文档 | 状态 | 用途 |
 | --- | --- | --- |
 | [`architecture.md`](architecture.md) | 当前 | 系统边界、数据流、模块职责、失败恢复、安全边界和架构决定 |
+| [`public-media-language.md`](public-media-language.md) | Current | GitHub release-facing copy is English; the video uses English visuals and narration with Simplified Chinese subtitles and a problem-first story |
 | [`context-canvas-0.5.4.md`](context-canvas-0.5.4.md) | 当前行为的来源 | 解释为什么取消实时保存，以及为什么长正文改为组件内部滚动 |
 | [`context-canvas-0.5.0.md`](context-canvas-0.5.0.md) | 历史 | 保留自动保存阶段的原始设计，供回溯后续变更原因 |
 

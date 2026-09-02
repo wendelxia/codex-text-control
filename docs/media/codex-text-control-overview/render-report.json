@@ -1,0 +1,331 @@
+{
+  "generatedAt": "2026-09-01T21:37:11.656Z",
+  "locale": "en-US",
+  "subtitleLocale": "zh-CN",
+  "purpose": "Start with common chat problems, then show how one editable accepted version solves them through a complete user-confirmed revision loop.",
+  "source": {
+    "productSourceHead": "53164c6a08313cd3da7c9808a8d779675fbd3b7a",
+    "identity": "input-hashes-authoritative",
+    "note": "The HEAD identifies the product baseline at render time. The input hashes below identify the exact staged or working-tree render sources.",
+    "version": "0.5.8",
+    "screenLabel": "UI demonstration · current source"
+  },
+  "output": {
+    "file": "docs/media/codex-text-control-overview/codex-text-control-overview.mp4",
+    "bytes": 10355222,
+    "sha256": "cf76c97f8ae8152478670934007532e960cc10d677635dd719f031afac3b31f3",
+    "durationSeconds": 142.2,
+    "streams": [
+      {
+        "codecType": "video",
+        "codecName": "h264",
+        "width": 1920,
+        "height": 1080,
+        "frameRate": "30/1"
+      },
+      {
+        "codecType": "audio",
+        "codecName": "aac",
+        "frameRate": "0/0",
+        "sampleRate": "48000",
+        "channels": 1
+      }
+    ],
+    "loudnessAnalysis": [
+      "\t\"input_i\" : \"-16.31\",",
+      "\t\"input_tp\" : \"-1.49\",",
+      "\t\"input_lra\" : \"3.90\",",
+      "\t\"input_thresh\" : \"-26.72\","
+    ],
+    "cleanDecode": true
+  },
+  "narration": {
+    "voice": {
+      "name": "Microsoft Zira Desktop",
+      "culture": "en-US"
+    },
+    "sceneDurationsSeconds": [
+      9.9,
+      9.7,
+      9.6,
+      11.2,
+      6.6,
+      9.6,
+      9.5,
+      8.2,
+      8.9,
+      10.1,
+      9.7,
+      9.4,
+      9.9,
+      10.5,
+      9.4
+    ],
+    "voiceDurationsSeconds": [
+      8.987755,
+      8.793107,
+      8.608027,
+      10.232971,
+      5.638141,
+      8.638095,
+      8.523129,
+      7.203039,
+      7.967937,
+      9.137596,
+      8.717596,
+      8.427755,
+      8.952426,
+      9.527846,
+      8.423084
+    ]
+  },
+  "environment": {
+    "os": {
+      "platform": "win32",
+      "release": "10.0.19045",
+      "version": "Windows 10 Pro",
+      "architecture": "x64"
+    },
+    "node": "v24.16.0",
+    "chrome": "Google Chrome 151.0.7922.175",
+    "ffmpeg": "ffmpeg version 9.0-full_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers",
+    "ffprobe": "ffprobe version 9.0-full_build-www.gyan.dev Copyright (c) 2007-2026 the FFmpeg developers",
+    "font": {
+      "primary": {
+        "family": "Arial",
+        "file": "arial.ttf",
+        "fileVersion": null
+      },
+      "subtitles": {
+        "family": "Microsoft YaHei",
+        "file": "msyh.ttc",
+        "fileVersion": null
+      }
+    },
+    "speechVoice": "Microsoft Zira Desktop",
+    "speechCulture": "en-US"
+  },
+  "githubActions": {
+    "workflow": "Quality",
+    "runId": 33545397952,
+    "url": "https://github.com/wendelxia/codex-text-control/actions/runs/33545397952",
+    "headSha": "863c380cdc3f64707cab56e856f24785a76f5ec0",
+    "conclusion": "success",
+    "jobsPassed": 5,
+    "jobsTotal": 5,
+    "observedAt": "2026-09-02"
+  },
+  "reproducibility": {
+    "mode": "semantic-not-byte-identical",
+    "guarantee": "The same source and compatible tools reproduce the same scenes, narration text, dimensions, codecs, and evidence structure.",
+    "byteLimit": "Browser rendering, speech synthesis, font rasterization, and codec builds can change encoded bytes across toolchains."
+  },
+  "languageGate": {
+    "publicCopy": "passed",
+    "englishNarration": "passed",
+    "simplifiedChineseSubtitles": "passed",
+    "renderedVisibleUi": [
+      {
+        "state": "initial",
+        "result": "passed"
+      },
+      {
+        "state": "edited-text",
+        "result": "passed"
+      },
+      {
+        "state": "edited-table",
+        "result": "passed"
+      },
+      {
+        "state": "source",
+        "result": "passed"
+      },
+      {
+        "state": "review",
+        "result": "passed"
+      },
+      {
+        "state": "returned",
+        "result": "passed"
+      },
+      {
+        "state": "success",
+        "result": "passed"
+      },
+      {
+        "state": "history",
+        "result": "passed"
+      }
+    ]
+  },
+  "inputs": [
+    {
+      "file": "scripts/promo-content.mjs",
+      "sha256": "4fecc010f9403aa0e4b4e7bcd0a0eb41953f697434eb3abb390c831739b107f8"
+    },
+    {
+      "file": "scripts/promo-html.mjs",
+      "sha256": "1edf84babfcc2cf4f075d2842e57b19bcee867fa0f3b9006b511b11214e45c41"
+    },
+    {
+      "file": "scripts/public-media-guard.mjs",
+      "sha256": "47876774a36f4e1bc6dd8ab3403774027de99707130cfb9174d62a328b572f05"
+    },
+    {
+      "file": "scripts/public-media-publisher.mjs",
+      "sha256": "5b61a219e7889a4e566bb2d18d94aee108f47c12102fd12d28b0fa35a096f62d"
+    },
+    {
+      "file": "scripts/render-github-promo.mjs",
+      "sha256": "d7efc35765689b70738664c494a2b017b61fa9790a57d82a74437ba36721aa79"
+    },
+    {
+      "file": "docs/design/public-media-language.md",
+      "sha256": "a4d11c1269dd14da37e0a989f8350d4f9ac49a6ffeaef24656f445bdb0ede6a9"
+    },
+    {
+      "file": "ui/editor.html",
+      "sha256": "4da1424561202ed4207ea254c5b769ea2c62c727b178557006b6bc14d3056dc4"
+    },
+    {
+      "file": "ui/editor.js",
+      "sha256": "b2a5cb31b4ab47ce6ba6a4e99c925fb242fe6413d65a159064fb0a294c2ee3dd"
+    },
+    {
+      "file": "ui/canvas-model.js",
+      "sha256": "d914d7814930b10ca43327543636153a5abcf69088a20c54a06a0935a644ed30"
+    }
+  ],
+  "artifacts": [
+    {
+      "file": "README.md",
+      "bytes": 4542,
+      "sha256": "5d6b095352de3464e16b5c7e139dc797ff432c096799c3953690aae756a4428b"
+    },
+    {
+      "file": "codex-text-control-overview.mp4",
+      "bytes": 10355222,
+      "sha256": "cf76c97f8ae8152478670934007532e960cc10d677635dd719f031afac3b31f3"
+    },
+    {
+      "file": "codex-text-control-overview-cover.png",
+      "bytes": 79681,
+      "sha256": "023a26cfa2aae4b5705cd4f19e123710fc5ba72864a54cbe1639c1a1b0f1efd4"
+    },
+    {
+      "file": "codex-text-control-overview.zh-CN.ass",
+      "bytes": 2667,
+      "sha256": "820c58e25f288eed3d6501ecaebae9c09691387a43fa21a5464621b00cb41687"
+    },
+    {
+      "file": "transcript.en-zh-CN.md",
+      "bytes": 5593,
+      "sha256": "85bc364daa226066cf871ae4a676e712978e21e50daba3f1bf7c0269f9f297a9"
+    }
+  ],
+  "qaFrames": [
+    {
+      "scene": "repetition",
+      "file": "tmp/github-promo/generated/qa-01-repetition.png",
+      "bytes": 402451,
+      "sha256": "7ed75c13f26253765c42d3a08a9aa5372d745ab74c282ab741892ec9adcc4110"
+    },
+    {
+      "scene": "small-edit",
+      "file": "tmp/github-promo/generated/qa-02-small-edit.png",
+      "bytes": 346438,
+      "sha256": "6d1b048de060c66c0c4088e4e0a9fa5dd2e67070c976218ebbd6ec09ae3b8551"
+    },
+    {
+      "scene": "which-version",
+      "file": "tmp/github-promo/generated/qa-03-which-version.png",
+      "bytes": 363877,
+      "sha256": "1316cfb6458c325fe9933faaa201c3aae131a3961978e755ebc45b8bc6e4df3e"
+    },
+    {
+      "scene": "solution",
+      "file": "tmp/github-promo/generated/qa-04-solution.png",
+      "bytes": 453203,
+      "sha256": "ba94e148085777ea7bef0094f5a0632bd125207918fdfb2c1e5df0cce8f494b0"
+    },
+    {
+      "scene": "open",
+      "file": "tmp/github-promo/generated/qa-05-open.png",
+      "bytes": 326052,
+      "sha256": "ba0f7e27ac33da1637a941e4732188de61f5470cc5f1e142bc4f38850e1d3426"
+    },
+    {
+      "scene": "edit-text",
+      "file": "tmp/github-promo/generated/qa-06-edit-text.png",
+      "bytes": 416477,
+      "sha256": "aa2b1df4013783af2c41440ec90ff202728959f379c948eacee1a6bf2c3206c8"
+    },
+    {
+      "scene": "edit-table",
+      "file": "tmp/github-promo/generated/qa-07-edit-table.png",
+      "bytes": 417027,
+      "sha256": "2811d3fc1accdcdbe052a4daa6c3d8a1426109e5f5e6e867037dc5dd17b1b3b6"
+    },
+    {
+      "scene": "source",
+      "file": "tmp/github-promo/generated/qa-08-source.png",
+      "bytes": 427387,
+      "sha256": "da27a29a3c81f78087ad9c869c739d6eb95033ec0c3cc81c305af4f2213e04c9"
+    },
+    {
+      "scene": "review",
+      "file": "tmp/github-promo/generated/qa-09-review.png",
+      "bytes": 455350,
+      "sha256": "8ab28447d1af214cc40c10d0a3e7af87fe2c0f212d50cf46f7ed5a1640348096"
+    },
+    {
+      "scene": "return",
+      "file": "tmp/github-promo/generated/qa-10-return.png",
+      "bytes": 433675,
+      "sha256": "35e17890fc32f773d6887a059934a4cc34eec14d3570ecd7fab58225d495bc11"
+    },
+    {
+      "scene": "commit",
+      "file": "tmp/github-promo/generated/qa-11-commit.png",
+      "bytes": 417012,
+      "sha256": "5653d95d231d9d3aadbb2543185635bd2c29ee25414cd5f3c2adada42c9c4c58"
+    },
+    {
+      "scene": "notification",
+      "file": "tmp/github-promo/generated/qa-12-notification.png",
+      "bytes": 432173,
+      "sha256": "073834639ed5328b9fc8aadd197c91c51ce6bd3ba001e8a9a36dcf5c2d1da92a"
+    },
+    {
+      "scene": "history",
+      "file": "tmp/github-promo/generated/qa-13-history.png",
+      "bytes": 475548,
+      "sha256": "15c660ee0a213095b5aa0bff0d9bd01a77b5c55d52f361ccbb864c0a0ee1095e"
+    },
+    {
+      "scene": "reread",
+      "file": "tmp/github-promo/generated/qa-14-reread.png",
+      "bytes": 328894,
+      "sha256": "47801244c778647307dbf89d685176aa73ed6b4a245342dc2620794036e366f2"
+    },
+    {
+      "scene": "outro",
+      "file": "tmp/github-promo/generated/qa-15-outro.png",
+      "bytes": 365591,
+      "sha256": "6959f1f5850de26536f28ad5354e1bb6ba9b7adac10ee13378868b72ae04b8b8"
+    }
+  ],
+  "verifiedClaims": [
+    "The product test suite reported 74/74 tests passing before this media-only change.",
+    "GitHub Actions run 33545397952 for commit 863c380cdc3f64707cab56e856f24785a76f5ec0 reported 5/5 jobs passing with conclusion success on 2026-09-02.",
+    "The repository license is MIT."
+  ],
+  "limitations": [
+    "Product screens are generated from the current source with a simulated Codex bridge; they are not a Codex host recording.",
+    "The demo harness uses English visible labels and English narration with Simplified Chinese subtitles; it does not claim product localization.",
+    "The subtitle code-point gate verifies channel separation and Chinese text presence, not translation quality.",
+    "Version 0.5.8 remains a source candidate and has not inherited the 0.5.7 real-host result.",
+    "No external authoritative capability benchmark currently fits this Codex context-canvas workflow."
+  ]
+}

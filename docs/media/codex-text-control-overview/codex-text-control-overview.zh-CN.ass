@@ -1,0 +1,29 @@
+[Script Info]
+Title: Codex Text Control overview
+ScriptType: v4.00+
+PlayResX: 1920
+PlayResY: 1080
+WrapStyle: 2
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name,Fontname,Fontsize,PrimaryColour,SecondaryColour,OutlineColour,BackColour,Bold,Italic,Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,Outline,Shadow,Alignment,MarginL,MarginR,MarginV,Encoding
+Style: Default,Microsoft YaHei,44,&H00FFFFFF,&H00FFFFFF,&H00111827,&HA0000000,0,0,0,0,100,100,0,0,3,2,0,2,100,100,112,1
+
+[Events]
+Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
+Dialogue: 0,0:00:00.28,0:00:09.65,Default,,0,0,0,,项目聊天一长，同一条要求就会被反复说明。\N修改、补充和提醒散落在很多条消息里。
+Dialogue: 0,0:00:10.18,0:00:19.35,Default,,0,0,0,,明明只想改一个表格单元格，\N模型却常常把整篇文档重新写一遍。
+Dialogue: 0,0:00:19.88,0:00:28.95,Default,,0,0,0,,讨论几轮以后，真正的问题变成了：\N下一次回答到底应该听哪一版？
+Dialogue: 0,0:00:29.48,0:00:40.15,Default,,0,0,0,,这个工具把讨论和最终版本分开：\N聊天负责讨论，画布保存确认版本。
+Dialogue: 0,0:00:40.68,0:00:46.75,Default,,0,0,0,,在项目里，让 Codex 打开\N当前权威上下文画布。
+Dialogue: 0,0:00:47.28,0:00:56.35,Default,,0,0,0,,直接修改需要调整的那句话。\N输入过程只留在草稿里，不会保存半成品。
+Dialogue: 0,0:00:56.88,0:01:05.85,Default,,0,0,0,,表格也能直接改单元格。\N这里只改状态，周围内容保持不变。
+Dialogue: 0,0:01:06.38,0:01:14.05,Default,,0,0,0,,复杂格式可切换到源码视图。\N仍然编辑同一份源码草稿。
+Dialogue: 0,0:01:14.58,0:01:22.95,Default,,0,0,0,,点击“完成编辑”后先检查完整原文。\N此时还没有保存，也没有更新当前版本。
+Dialogue: 0,0:01:23.48,0:01:33.05,Default,,0,0,0,,发现问题就返回修改。\N草稿不会丢，之前确认的版本仍然有效。
+Dialogue: 0,0:01:33.58,0:01:42.75,Default,,0,0,0,,只有点击“确认提交”，系统才保存快照，\N并更新当前权威版本。
+Dialogue: 0,0:01:43.28,0:01:52.15,Default,,0,0,0,,聊天里只返回新的版本号，\N不再重复粘贴整篇正文。
+Dialogue: 0,0:01:52.68,0:02:02.05,Default,,0,0,0,,历史版本可以查看和载入。\N要恢复旧版，仍然需要再次确认提交。
+Dialogue: 0,0:02:02.58,0:02:12.55,Default,,0,0,0,,回答前，Codex 会重新读取确认版本。\N之后继续遵循你刚刚确认的内容。
+Dialogue: 0,0:02:13.08,0:02:21.95,Default,,0,0,0,,结果是：少重复，小改动更准确，\N下一次回答也有明确依据。

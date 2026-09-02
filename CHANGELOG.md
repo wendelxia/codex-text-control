@@ -4,6 +4,10 @@
 
 ## [0.5.8] - 2026-09-01
 
+### Changes
+
+- Add an English GitHub homepage entry and a product video with English visuals and narration plus human-reviewed Simplified Chinese subtitles. The story starts with repeated requirements, full rewrites caused by small edits, and unclear current versions, then introduces the tool, demonstrates the workflow, and reports the result. The media package includes a bilingual transcript, environment versions, public artifact hashes, and a reproducible renderer.
+
 ### 修复
 
 - 增加项目级不可变状态转换；两个 MCP 进程从同一基准同时更新时最多一个后继转换成功，另一个明确收到版本变化错误。
