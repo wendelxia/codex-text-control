@@ -34,10 +34,10 @@ const widgetToolMeta = (invoking, invoked) => ({
 });
 
 const server = new McpServer(
-  { name: "codex-text-control", version: "0.5.8" },
+  { name: "codex-text-control", version: "0.5.9" },
   {
     instructions:
-      "Codex Text Control 提供可直接编辑文字和 Markdown 表格的上下文画布。每次工具调用必须显式传入当前工作区根目录 projectDir。编辑过程只保留本地草稿；用户点击完成编辑后，Widget 保存一个不可变修订、更新权威指针并回传版本通知，模型应调用 get_authoritative_context 读取全文。",
+      "Codex Text Control 提供一个可直接编辑连续 Markdown 正文的上下文画布。每次工具调用必须显式传入当前工作区根目录 projectDir。编辑过程只保留本地草稿；用户点击完成编辑后，Widget 保存一个不可变修订、更新权威指针并回传版本通知，模型应调用 get_authoritative_context 读取全文。",
   },
 );
 
@@ -62,7 +62,7 @@ registerAppTool(
   {
     title: "打开上下文画布",
     description:
-      "打开 Codex 上下文画布。必须传入当前工作区根目录 projectDir。全文模式可直接编辑文字和 Markdown 表格；扩展点模式只编辑指定块，固定正文不会交给模型重写。",
+      "打开 Codex 上下文画布。必须传入当前工作区根目录 projectDir。全文模式使用一个连续正文编辑器，文字和 Markdown 表格不拆分；扩展点模式只编辑指定块，固定正文不会交给模型重写。",
     inputSchema: {
       ...projectArgs,
       sourceText: z
@@ -177,7 +177,7 @@ registerAppTool(
   "update_authoritative_context",
   {
     title: "更新上下文画布",
-    description: "把画布中的完整 Markdown 原子保存为不可变修订并更新权威指针。用于直接编辑文字和表格，不需要先保存再提交。",
+    description: "把连续正文画布中的完整 Markdown 原子保存为不可变修订并更新权威指针。用于直接编辑文字和表格，不需要先保存再提交。",
     inputSchema: {
       ...projectArgs,
       content: z.string().min(1).max(CONTEXT_LIMITS.content),

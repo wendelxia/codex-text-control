@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import vm from "node:vm";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -9,6 +9,34 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { registerTextControlWidget } from "../mcp/widget-resource.mjs";
 
 const WIDGET_URI = "ui://widget/codex-text-control/editor.html";
+
+test("发布版本在包、锁文件、插件、MCP、README 和变更记录中保持一致", async () => {
+  const [packageText, lockText, manifestText, serverSource, widgetSource, readme, changelog] = await Promise.all([
+    readFile(join(process.cwd(), "package.json"), "utf8"),
+    readFile(join(process.cwd(), "package-lock.json"), "utf8"),
+    readFile(join(process.cwd(), ".codex-plugin", "plugin.json"), "utf8"),
+    readFile(join(process.cwd(), "mcp", "server.mjs"), "utf8"),
+    readFile(join(process.cwd(), "mcp", "widget-resource.mjs"), "utf8"),
+    readFile(join(process.cwd(), "README.md"), "utf8"),
+    readFile(join(process.cwd(), "CHANGELOG.md"), "utf8"),
+  ]);
+  const packageJson = JSON.parse(packageText);
+  const lock = JSON.parse(lockText);
+  const manifest = JSON.parse(manifestText);
+  const version = packageJson.version;
+  assert.equal(lock.version, version);
+  assert.equal(lock.packages[""].version, version);
+  assert.equal(manifest.version.split("+")[0], version);
+  assert.match(serverSource, new RegExp(`version: ["']${version.replaceAll(".", "\\.")}["']`));
+  assert.match(widgetSource, new RegExp(`appVersion = ["']${version.replaceAll(".", "\\.")}["']`));
+  assert.match(readme, new RegExp(`version-${version.replaceAll(".", "\\.")}`));
+  assert.match(readme, new RegExp("当前状态：`" + version.replaceAll(".", "\\.") + "`"));
+  assert.match(readme, /连续正文编辑/);
+  assert.match(changelog, new RegExp(`^## \\[${version.replaceAll(".", "\\.")}\\] - \\d{4}-\\d{2}-\\d{2}$`, "m"));
+  assert.match(manifest.description, /连续 Markdown/);
+  assert.match(serverSource, /连续 Markdown 正文/);
+  assert.match(widgetSource, /连续正文编辑器/);
+});
 
 // 这项测试检查 MCP Apps（MCP 应用）协议边界，而不是只检查后端函数能不能单独运行。
 // 原因很直接：编辑器里的按钮通过应用桥接调用工具；工具没有声明“应用可调用”时，

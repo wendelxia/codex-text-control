@@ -2,6 +2,33 @@
 
 本文件记录用户能感知的变化、修复、已知限制和回退方法。版本号遵循 Semantic Versioning（语义化版本）：`主版本.次版本.修订版本`。
 
+## [0.5.9] - 2026-09-02
+
+### Changed
+
+- Edit the entire authoritative Markdown document in one continuous text area, including paragraphs and tables. `Ctrl+A`, copy, paste, and whole-document replacement now work as expected.
+- Remove line prefixes, block boundaries, table-cell inputs, and line-number-style presentation from the canvas. The source view remains available for checking complex Markdown.
+- Keep the canvas, source view, and final review on the same unchanged string so switching views cannot reformat content that the user did not edit.
+
+### Fixed
+
+- Keep a visible left-edge focus indicator on the continuous editor without restoring the horizontal input-box appearance.
+- Treat AI-provided full-document and extension-point candidates as pending changes when they differ from the current authoritative text, so users can review and confirm them without first changing an extra character.
+- Preserve continuous-canvas drafts through save timeouts and allow a safe retry; extension-point retries also recover when revision creation succeeds but the authoritative commit initially fails.
+
+### Verification
+
+- `node --test tests/widget-interaction.test.mjs`: `25/25` passed, covering continuous text, Markdown tables, draft preservation, bidirectional view synchronization, final review, failure recovery, AI candidates, and extension-point regressions.
+- `npm run quality`: `95/95` automated tests passed together with JavaScript syntax checks and the MCP probe.
+
+### Known limitation
+
+- The `0.5.9` build has not completed a reinstall-and-click verification inside the real Codex desktop host. It is classified as a pre-release and does not claim production readiness or cross-platform host compatibility.
+
+### Rollback
+
+Reinstall `0.5.8+codex.20260901204256` to restore the previous block-and-table canvas. Project data under `.codex-text-control/` uses the same revision format and must not be deleted during rollback.
+
 ## [0.5.8] - 2026-09-01
 
 ### Changes
