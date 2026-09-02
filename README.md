@@ -3,7 +3,7 @@
 <div align="center">
   <p><strong>在 Codex 里直接修改当前权威上下文。检查完整原文后，再把一次确认保存成可追踪版本。</strong></p>
   <p>
-    <a href="docs/evidence/verification-0.5.9-2026-09-02.md"><img alt="状态：预发布候选" src="https://img.shields.io/badge/status-pre--release_candidate-f59e0b"></a>
+    <a href="https://github.com/wendelxia/codex-text-control/releases/tag/v0.5.9"><img alt="状态：预发布" src="https://img.shields.io/badge/status-pre--release-f59e0b"></a>
     <img alt="版本：0.5.9" src="https://img.shields.io/badge/version-0.5.9-2563eb">
     <img alt="Node.js（JavaScript 运行时）22 或更高版本" src="https://img.shields.io/badge/Node.js-%3E%3D22-339933?logo=nodedotjs&logoColor=white">
     <a href="https://github.com/wendelxia/codex-text-control/actions/workflows/quality.yml"><img alt="持续集成状态" src="https://github.com/wendelxia/codex-text-control/actions/workflows/quality.yml/badge.svg"></a>
@@ -34,7 +34,7 @@
 
 Codex Text Control 是一个本地 Codex 插件。它不改写已经显示的聊天消息，而是在项目内维护一份后续对话优先读取的权威 Markdown（轻量标记文本格式）。用户在一个连续正文编辑器里直接删、增、改整份文字和表格 Markdown；编辑期间不写盘，只有检查完整原文并点击“确认提交”后，才生成一个不可变修订并更新权威指针。
 
-> **当前状态：`0.5.9` 预发布候选版。** `0.5.7` 已在当前 Windows Codex 桌面宿主完成核心点击闭环；`0.5.9` 的自动化、跨进程并发、原文保真和连续正文交互检查已通过，但公开 Release 和重新安装后的真实宿主复验尚未完成。项目也还没有跨平台真实宿主结果或外部权威能力基准，因此这里不声称“生产可用”“领先同类”或“任何环境都能安装”。
+> **当前状态：`0.5.9` 公开预发布版。** `0.5.7` 已在当前 Windows Codex 桌面宿主完成核心点击闭环；`0.5.9` 的自动化、跨进程并发、原文保真和连续正文交互检查已通过，但尚未重新安装进真实宿主。项目也还没有跨平台真实宿主结果或外部权威能力基准，因此这里不声称“生产可用”“领先同类”或“任何环境都能安装”。
 
 ## 为什么需要它
 
@@ -72,7 +72,7 @@ Codex Text Control 是一个本地 Codex 插件。它不改写已经显示的聊
 
 ### 从源码验证
 
-当前公开仓库提供源码和可复现检查；`0.5.9` 预发布候选仍需通过 GitHub Actions 后才会建立 GitHub Release，且尚未提供一键安装入口：
+当前公开仓库提供源码、可复现检查和 GitHub 预发布版，但尚未提供一键安装入口：
 
 ```powershell
 git clone https://github.com/wendelxia/codex-text-control.git
@@ -198,7 +198,7 @@ Codex 读取当前权威上下文
 | 干净克隆 | 全新本地克隆执行 `npm ci --ignore-scripts` 后，`74/74`、语法检查和 MCP 探针通过，工作树干净 | 结果不依赖开发目录已有 `node_modules` 或未跟踪源码 | 不是第二位用户或第二个操作系统的独立复现 |
 | 真实宿主 | `0.5.7+codex.20260901154437` 在当前 Windows Codex 中完成“修改 -> 原文检查 -> 返回修改 -> 再检查 -> 确认提交 -> 回读” | 只证明最后一个已安装构建的当前环境闭环 | `0.5.9` 改过画布交互，不能继承这项宿主结论 |
 | 供应链检查 | 生产依赖已知高危漏洞 `0`，签名 `96`，来源证明 `11` | npm 当前数据源未报告对应问题 | 不能证明依赖没有未知漏洞 |
-| 公开仓库与预发布候选 | 候选待发布 | `main` 已公开，GitHub Actions 会在 Windows、Linux 和 Node.js 22、24 上运行质量链；`v0.5.9` 本地候选门槛已通过 | 还没有公开 Release、陌生用户独立安装或长期维护承诺 |
+| 公开仓库与预发布 | 已建立 | `main` 已公开，GitHub Actions 会在 Windows、Linux 和 Node.js 22、24 上运行质量链；`v0.5.9` 提供首个公开预发布快照 | 还没有稳定版、陌生用户独立安装或长期维护承诺 |
 
 最新真实宿主提交版本为 `rev-1788249723947-c7d6a499`，对应 `0.5.7`。`0.5.9` 的连续正文结果见 [`0.5.9 验证记录`](docs/evidence/verification-0.5.9-2026-09-02.md)，底层并发失败复现、修复和原文保真结果见 [`0.5.8 验证记录`](docs/evidence/verification-0.5.8-2026-09-01.md)。当前缺少适用于“Codex 上下文画布”的外部权威能力基准，因此不能用 GitHub 星数、同类项目知名度或内部测试数量声称能力领先。
 
@@ -208,7 +208,7 @@ Codex 读取当前权威上下文
 - 未点击“确认提交”就关闭画布时，当前本地草稿不会写入版本历史，也不承诺恢复。
 - 没有逐行差异视图、公开安全联系人或跨平台真实宿主证据；不可变状态转换不是跨机器分布式事务，网络文件系统语义尚未验证。
 - 项目目录依赖 Codex 提供当前工作区；缺少目录时会明确拒绝，不会猜测或退回插件安装缓存。
-- 当前只适合从源码继续验证；预发布候选不等于已经建立公开 Release、达到稳定发行或生产可用。
+- 当前只适合从源码或 GitHub 预发布快照继续验证；公开预发布不等于已经达到稳定发行或生产可用。
 
 ## 文档导航
 
@@ -223,6 +223,7 @@ Codex 读取当前权威上下文
 | [`docs/evidence/verification-0.5.7-2026-09-01.md`](docs/evidence/verification-0.5.7-2026-09-01.md) | 评审者：最后一个已安装构建的真实宿主证据 |
 | [`docs/evidence/real-host-multi-test-0.5.3-2026-09-01.md`](docs/evidence/real-host-multi-test-0.5.3-2026-09-01.md) | 评审者：真实多场景测试、失败项和后续修复来源 |
 | [`docs/evidence/github-readme-benchmark-2026-09-01.md`](docs/evidence/github-readme-benchmark-2026-09-01.md) | 维护者：本次 GitHub README 对照来源与采用理由 |
+| [`docs/news/2026-09-02-codex-text-control-0.5.9.md`](docs/news/2026-09-02-codex-text-control-0.5.9.md) | 公开新闻稿：0.5.9 连续上下文画布的背景、变化、证据和限制 |
 | [`CHANGELOG.md`](CHANGELOG.md) | 用户：版本变化、验证状态和回退方法 |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | 贡献者：开发环境、检查命令和变更门槛 |
 | [`SECURITY.md`](SECURITY.md) | 用户与安全研究者：安全边界、已知风险和报告现状 |
@@ -233,4 +234,4 @@ Codex 读取当前权威上下文
 
 项目使用 [MIT 许可证](LICENSE)，另有[中文说明](LICENSE.zh-CN.md)。第三方依赖与许可证说明见 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)。
 
-客观评价：这个项目已经从“聊天里再复制一份全文”走到可实际点击的项目级上下文画布；并发覆盖和非目标全文重排也有失败复现与回归测试。公开源码和持续集成入口已经建立，`0.5.9` 预发布候选也已通过本地门槛，但仍需 GitHub Actions、公开 Release、真实宿主复验、陌生用户复现、跨平台真实宿主结果和外部基准。README（仓库首页说明）只按证据说明当前阶段，不把文档完整度冒充产品成熟度。
+客观评价：这个项目已经从“聊天里再复制一份全文”走到可实际点击的项目级上下文画布；并发覆盖和非目标全文重排也有失败复现与回归测试。公开源码、持续集成和预发布入口已经建立，但距离成熟公开项目仍差 `0.5.9` 真实宿主复验、公开一键安装、陌生用户复现、跨平台真实宿主结果和外部基准。README（仓库首页说明）只按证据说明当前阶段，不把文档完整度冒充产品成熟度。
