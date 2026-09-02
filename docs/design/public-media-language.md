@@ -2,13 +2,13 @@
 
 ## Rule
 
-GitHub-facing video uses English visible UI text and English narration, with human-reviewed Simplified Chinese subtitles. The accessible transcript contains both the English narration and the Chinese subtitles. Titles, filenames, metadata, preview images, and accompanying media copy remain English.
+All GitHub release-facing copy is English: repository introduction, PR and release text, media documentation, titles, filenames, metadata, preview images, and accompanying media copy. The video uses English visible UI text and English narration, with human-reviewed Simplified Chinese subtitles. The accessible transcript contains both the English narration and the Chinese subtitles; those two subtitle artifacts are the only intentional Chinese exception.
 
 Historical evidence, product source, and existing maintainer documentation are not silently translated by this rule. A separate translation requires its own review because changing source or evidence text can alter behavior or invalidate hashes.
 
 ## Why This Exists
 
-The current English speech voice sounds more natural than the available Chinese speech voice. Simplified Chinese subtitles preserve direct comprehension without accepting stiff Chinese narration. This is the default for future project videos unless the user explicitly requests another language format.
+The current English speech voice sounds more natural than the available Chinese speech voice. Simplified Chinese subtitles preserve direct comprehension without accepting stiff Chinese narration. This is the default for future project videos unless the user explicitly requests another language format. Keeping all other GitHub-facing copy in English prevents the repository release surface from switching languages unexpectedly.
 
 The story must begin with concrete problems people meet in ordinary work. Only after those problems are clear may the video introduce the tool, demonstrate how it changes the workflow, and state what the user gains. Product-first copy or abstract terminology must not replace this problem-to-solution sequence.
 

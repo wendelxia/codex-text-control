@@ -4,9 +4,9 @@
 
 ## [0.5.8] - 2026-09-01
 
-### 变更
+### Changes
 
-- 增加 GitHub 首页英文推广入口，以及英文画面和旁白、简体中文字幕的产品视频。视频先用日常工作场景说明要求反复解释、小改动引发全文重写和当前版本不明确，再引出工具如何解决这些问题，最后完整展示打开、编辑、复核、返回、确认、版本通知、历史和重新读取流程。媒体包提供双语转录、环境版本、公开制品哈希和可重复渲染脚本。
+- Add an English GitHub homepage entry and a product video with English visuals and narration plus human-reviewed Simplified Chinese subtitles. The story starts with repeated requirements, full rewrites caused by small edits, and unclear current versions, then introduces the tool, demonstrates the workflow, and reports the result. The media package includes a bilingual transcript, environment versions, public artifact hashes, and a reproducible renderer.
 
 ### 修复
 
