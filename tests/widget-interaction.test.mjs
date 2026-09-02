@@ -77,12 +77,12 @@ class FakeDocument {
     this.title = "Codex 上下文画布";
     this.elements = new Map();
     const ids = [
-      "page-title", "status", "editor-label", "editor", "canvas", "canvas-view", "source-view",
+      "page-title", "status", "editor-label", "editor", "canvas-editor", "canvas", "canvas-view", "source-view",
       "canvas-tab", "source-tab", "reset", "finish-editing",
       "review-dialog", "review-content", "review-status", "review-cancel", "review-submit",
       "meta", "history-panel", "history",
     ];
-    const tags = { editor: "textarea", "review-dialog": "dialog", "review-content": "pre", "review-cancel": "button", "review-submit": "button" };
+    const tags = { editor: "textarea", "canvas-editor": "textarea", "review-dialog": "dialog", "review-content": "pre", "review-cancel": "button", "review-submit": "button" };
     for (const id of ids) this.elements.set(id, new FakeElement(tags[id] || "div", id));
   }
   getElementById(id) { return this.elements.get(id) || null; }
@@ -200,17 +200,18 @@ test("宿主初始高度很小时，画布仍申请稳定的可读高度", async
   assert.doesNotMatch(mainRule, /\b(?:dvh|vh)\b/);
 });
 
-test("正文原位编辑不显示横向输入框，只保留非矩形焦点提示", async () => {
+test("正文画布使用单一连续文本流，不显示逐行前缀或代码行号", async () => {
   const html = await readFile(join(process.cwd(), "ui", "editor.html"), "utf8");
-  assert.match(html, /\.block-input\s*\{[^}]*border:\s*0;[^}]*border-radius:\s*0;/s);
-  assert.match(html, /\.block-input:focus\s*\{[^}]*outline:\s*none;/s);
-  assert.doesNotMatch(html, /\.block-input:hover\s*\{[^}]*border-color:/s);
-  assert.doesNotMatch(html, /\.canvas-block:focus-within\s*\{[^}]*box-shadow:/s);
-  assert.match(html, /\.canvas-block:focus-within::before\s*\{[^}]*width:\s*2px;[^}]*background:\s*var\(--focus\);/s);
-  assert.doesNotMatch(html, /button:focus-visible,\s*textarea:focus,\s*input:focus/);
+  assert.match(html, /id="canvas-editor"/);
+  assert.match(html, /id="canvas-editor"[^>]*aria-label="完整 Markdown 正文"/);
+  assert.match(html, /#canvas-editor\s*\{[^}]*user-select:\s*text;/s);
+  assert.match(html, /#canvas-editor:focus\s*\{[^}]*box-shadow:\s*inset 3px 0 0 var\(--focus\);/s);
+  assert.doesNotMatch(html, /#canvas-editor:focus\s*\{[^}]*outline:\s*none;/s);
+  assert.doesNotMatch(html, /\.block-prefix|\.canvas-block|\.table-block|\.cell-input/);
+  assert.doesNotMatch(html, /line-number|line-numbering|gutter/iu);
 });
 
-test("Markdown 表格在画布中显示为可直接编辑的真实表格", async () => {
+test("画布全文编辑器可以一次选中并修改包含表格的连续正文", async () => {
   const revision = { id: "rev-table", content: "| 项目 | 状态 |\n| --- | --- |\n| 闭环 | 已通过 |" };
   const harness = await createHarness({
     toolOutput: {
@@ -223,19 +224,67 @@ test("Markdown 表格在画布中显示为可直接编辑的真实表格", async
     callServerTool: async () => ({ structuredContent: { revision, followUpMessage: "版本：rev-table" } }),
   });
   const nodes = descendants(harness.element("canvas"));
-  assert.ok(nodes.some((node) => node.tagName === "TABLE"));
-  assert.equal(nodes.some((node) => node.tagName === "BUTTON"), false, "正文表格不应附带增删行列工具。");
-  const cell = nodes.find((node) => node.value === "待验收");
-  assert.ok(cell, "表格单元格应是可编辑控件。");
-  await cell.emit("focus");
-  cell.value = "已通过";
-  await cell.emit("input");
+  const canvasEditor = nodes.find((node) => node.id === "canvas-editor");
+  assert.ok(canvasEditor, "画布应只有一个连续正文编辑器。");
+  assert.equal(canvasEditor.tagName, "TEXTAREA");
+  assert.equal(canvasEditor.value, "| 项目 | 状态 |\n| --- | --- |\n| 闭环 | 待验收 |");
+  canvasEditor.value = "| 项目 | 状态 |\n| --- | --- |\n| 闭环 | 已通过 |";
+  await canvasEditor.emit("input");
   await new Promise((resolve) => setTimeout(resolve, 20));
   assert.equal(harness.calls.length, 0, "表格输入停顿不应产生中间修订。");
   await finishThroughReview(harness);
   await new Promise((resolve) => setTimeout(resolve, 20));
   assert.equal(harness.calls[0].name, "update_authoritative_context");
   assert.match(harness.calls[0].arguments.content, /\| 闭环 \| 已通过 \|/);
+});
+
+test("重复点击当前画布标签不会用旧源码覆盖连续正文草稿", async () => {
+  const harness = await createHarness({
+    toolOutput: { mode: "full", projectDir: "/workspace/demo", sourceText: "初始正文", revisions: [], current: null },
+  });
+  const canvasEditor = descendants(harness.element("canvas")).find((node) => node.id === "canvas-editor");
+  canvasEditor.value = "画布中的最新草稿";
+  await canvasEditor.emit("input");
+  await harness.element("canvas-tab").emit("click");
+  assert.equal(canvasEditor.value, "画布中的最新草稿");
+});
+
+test("画布和源码视图往返时逐字保留连续正文草稿", async () => {
+  const canvasContent = "第一段\r\n\r\n| 项目 | 状态 |\r\n| --- | --- |\r\n| 画布 | 待验收 |";
+  const finalContent = canvasContent.replace("待验收", "已通过");
+  const harness = await createHarness({
+    toolOutput: { mode: "full", projectDir: "/workspace/demo", sourceText: "初始正文", revisions: [], current: null },
+    callServerTool: async (request) => ({ structuredContent: { revision: { id: "rev-roundtrip", content: request.arguments.content } } }),
+  });
+  const canvasEditor = descendants(harness.element("canvas")).find((node) => node.id === "canvas-editor");
+  canvasEditor.value = canvasContent;
+  await canvasEditor.emit("input");
+  await harness.element("source-tab").emit("click");
+  assert.equal(harness.element("editor").value, canvasContent);
+  harness.element("editor").value = finalContent;
+  await harness.element("editor").emit("input");
+  await harness.element("canvas-tab").emit("click");
+  assert.equal(canvasEditor.value, finalContent);
+  await finishThroughReview(harness);
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  assert.equal(harness.calls.length, 1);
+  assert.equal(harness.calls[0].arguments.content, finalContent);
+});
+
+test("AI 候选全文与当前权威内容不同时可以不改字直接检查并提交", async () => {
+  const current = { id: "rev-base", revisionId: "rev-base", content: "旧权威正文" };
+  const candidate = "AI 整理后的完整候选正文";
+  const harness = await createHarness({
+    toolOutput: { mode: "full", projectDir: "/workspace/demo", sourceText: candidate, revisions: [current], current },
+    callServerTool: async (request) => ({ structuredContent: { revision: { id: "rev-candidate", content: request.arguments.content } } }),
+  });
+  await harness.element("finish-editing").emit("click");
+  assert.equal(harness.element("review-dialog").open, true);
+  assert.equal(harness.element("review-content").textContent, candidate);
+  await harness.element("review-submit").emit("click");
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  assert.equal(harness.calls.length, 1);
+  assert.equal(harness.calls[0].arguments.content, candidate);
 });
 
 test("输入停顿和中文组合态不保存，确认提交只保存最终正文一次", async () => {
@@ -320,6 +369,31 @@ test("完成保存永久不返回时按钮恢复，且本地画布内容保留",
   assert.equal(harness.element("editor").value, "修改后正文");
   assert.match(harness.element("status").textContent, /超时/);
   assert.match(harness.element("status").textContent, /结果未知/);
+});
+
+test("连续正文画布保存超时后恢复可编辑状态并保留草稿", async () => {
+  let attempts = 0;
+  const harness = await createHarness({
+    toolOutput: { mode: "full", projectDir: "/workspace/demo", sourceText: "原文", revisions: [], current: null },
+    callServerTool: (request) => {
+      attempts += 1;
+      if (attempts === 1) return new Promise(() => {});
+      return { structuredContent: { revision: { id: "rev-retry", content: request.arguments.content } } };
+    },
+  });
+  const canvasEditor = descendants(harness.element("canvas")).find((node) => node.id === "canvas-editor");
+  canvasEditor.value = "画布中的修改后正文";
+  await canvasEditor.emit("input");
+  await finishThroughReview(harness);
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  assert.equal(canvasEditor.disabled, false);
+  assert.equal(canvasEditor.readOnly, false);
+  assert.equal(canvasEditor.value, "画布中的修改后正文");
+  assert.match(harness.element("status").textContent, /超时/);
+  await finishThroughReview(harness);
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  assert.equal(attempts, 2);
+  assert.match(harness.element("meta").textContent, /rev-retry/);
 });
 
 test("完成保存进行中锁定编辑控件，避免同一会话产生第二个修订", async () => {
@@ -467,6 +541,59 @@ test("扩展点模式只显示块内源码，并在完成时通过受限工具�
   assert.deepEqual(JSON.parse(JSON.stringify(harness.calls[1].arguments)), {
     projectDir: "/workspace/demo", revisionId: "rev-extension", expectedCurrentRevisionId: "rev-base",
   });
+});
+
+test("AI 扩展点候选可以不改字直接检查并提交", async () => {
+  const base = { id: "rev-base", revisionId: "rev-base", content: "固定\n【AI扩展点：补充】\n旧内容\n【/AI扩展点】" };
+  const candidate = "AI 已生成的块内候选";
+  const revision = { id: "rev-extension-candidate", content: `固定\n【AI扩展点：补充】\n${candidate}\n【/AI扩展点】` };
+  const harness = await createHarness({
+    toolOutput: {
+      mode: "extension", projectDir: "/workspace/demo", sourceText: candidate,
+      extension: { name: "补充", baseRevisionId: base.id, currentContent: "旧内容" }, revisions: [base], current: base,
+    },
+    callServerTool: async (request) => request.name === "save_context_extension_revision"
+      ? { structuredContent: { revision } }
+      : { structuredContent: { revision } },
+  });
+  await harness.element("finish-editing").emit("click");
+  assert.equal(harness.element("review-dialog").open, true);
+  assert.equal(harness.element("review-content").textContent, candidate);
+  await harness.element("review-submit").emit("click");
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  assert.deepEqual(harness.calls.map((call) => call.name), ["save_context_extension_revision", "commit_authoritative_context"]);
+  assert.equal(harness.calls[0].arguments.extensionContent, candidate);
+});
+
+test("扩展点修订保存后提交失败时保留候选并可安全重试", async () => {
+  const base = { id: "rev-base", revisionId: "rev-base", content: "固定\n【AI扩展点：补充】\n旧内容\n【/AI扩展点】" };
+  const candidate = "重试后仍应提交的候选";
+  const revision = { id: "rev-extension-retry", content: `固定\n【AI扩展点：补充】\n${candidate}\n【/AI扩展点】` };
+  let commitAttempts = 0;
+  const harness = await createHarness({
+    toolOutput: {
+      mode: "extension", projectDir: "/workspace/demo", sourceText: candidate,
+      extension: { name: "补充", baseRevisionId: base.id, currentContent: "旧内容" }, revisions: [base], current: base,
+    },
+    callServerTool: async (request) => {
+      if (request.name === "save_context_extension_revision") return { structuredContent: { revision } };
+      commitAttempts += 1;
+      if (commitAttempts === 1) throw new Error("模拟权威指针提交失败");
+      return { structuredContent: { revision } };
+    },
+  });
+  await finishThroughReview(harness);
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  assert.equal(harness.element("editor").value, candidate);
+  assert.match(harness.element("status").textContent, /模拟权威指针提交失败/);
+  await finishThroughReview(harness);
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  assert.deepEqual(harness.calls.map((call) => call.name), [
+    "save_context_extension_revision", "commit_authoritative_context",
+    "save_context_extension_revision", "commit_authoritative_context",
+  ]);
+  assert.equal(commitAttempts, 2);
+  assert.match(harness.element("meta").textContent, /rev-extension-retry/);
 });
 
 test("扩展点恢复只恢复块内权威内容", async () => {

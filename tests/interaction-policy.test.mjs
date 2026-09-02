@@ -67,6 +67,8 @@ test("文件交付、简短对话和过程消息不自动打开画布", async ()
 
 test("结论稿打开、编辑和提交前检查都不保存，只有确认提交才更新权威版本", async () => {
   const skill = await readFile(join(process.cwd(), "skills", "codex-text-control", "SKILL.md"), "utf8");
+  assert.match(skill, /连续的多行正文编辑器/);
+  assert.match(skill, /不拆成文字块、单元格或行号视觉结构/);
   assert.match(skill, /初次打开、编辑过程和提交前检查都不保存/);
   assert.match(skill, /弹出完整待提交原文供最后检查/);
   assert.match(skill, /点击“确认提交”后.*更新权威版本/);

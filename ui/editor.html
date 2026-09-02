@@ -36,7 +36,7 @@
     button { min-height: 36px; border: 1px solid var(--border); border-radius: 6px; padding: 7px 11px; background: var(--surface); cursor: pointer; }
     button:hover { background: var(--surface-subtle); }
     button:disabled { opacity: .5; cursor: not-allowed; }
-    button:focus-visible, #editor:focus, .cell-input:focus { outline: 3px solid color-mix(in srgb, var(--focus) 35%, transparent); outline-offset: 1px; border-color: var(--focus); }
+    button:focus-visible, #editor:focus { outline: 3px solid color-mix(in srgb, var(--focus) 35%, transparent); outline-offset: 1px; border-color: var(--focus); }
     .mode-row { z-index: 10; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--border); background: var(--surface); }
     .tabs, .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
     .tabs button { border: 0; border-bottom: 3px solid transparent; border-radius: 0; background: transparent; }
@@ -46,27 +46,9 @@
     .toolbar .finish { border-color: transparent; background: var(--accent); color: var(--on-accent); font-weight: 650; }
     .toolbar .finish:hover { background: color-mix(in srgb, var(--accent) 88%, var(--surface)); }
     #canvas-view, #source-view { min-height: 0; overflow-y: auto; overscroll-behavior: contain; background: var(--surface); border-bottom: 1px solid var(--border); }
-    #canvas { min-height: 100%; padding: 26px clamp(14px, 4vw, 52px); }
-    .canvas-block { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: 8px; min-width: 0; }
-    .canvas-block:focus-within::before { content: ""; position: absolute; top: 5px; bottom: 5px; left: 0; width: 2px; background: var(--focus); pointer-events: none; }
-    .block-prefix { min-width: 24px; padding-top: 7px; color: var(--muted); font-weight: 650; text-align: right; }
-    .canvas-block:focus-within .block-prefix { color: var(--focus); }
-    .block-input { width: 100%; min-height: 34px; resize: none; overflow: hidden; border: 0; border-radius: 0; padding: 6px 8px; background: transparent; line-height: 1.55; }
-    .block-input:focus { outline: none; }
-    .canvas-block.heading .block-input { font-size: 20px; font-weight: 700; line-height: 1.35; }
-    .canvas-block.quote { border-left: 3px solid var(--border); padding-left: 8px; }
-    .canvas-block.code { display: block; margin: 8px 0; }
-    .canvas-block.code .block-input { min-height: 120px; background: var(--surface-subtle); font-family: ui-monospace, "Cascadia Code", monospace; }
-    .canvas-block.blank .block-input { min-height: 20px; height: 20px; padding: 0 8px; }
-    .table-block { margin: 12px 0 18px; min-width: 0; }
-    .table-scroll { width: 100%; overflow-x: auto; border: 1px solid var(--border); border-radius: 6px; }
-    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-    th, td { min-width: 120px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 0; }
-    th:last-child, td:last-child { border-right: 0; }
-    tr:last-child td { border-bottom: 0; }
-    th { background: var(--surface-subtle); }
-    .cell-input { width: 100%; min-height: 42px; border: 0; border-radius: 0; padding: 9px 10px; background: transparent; }
-    th .cell-input { font-weight: 700; }
+    #canvas { min-height: 100%; padding: 22px clamp(14px, 4vw, 52px); }
+    #canvas-editor { display: block; width: 100%; min-height: 430px; height: 100%; resize: none; overflow: auto; border: 0; border-radius: 0; padding: 4px 0 24px; background: transparent; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; }
+    #canvas-editor:focus { outline: 2px solid transparent; outline-offset: 1px; box-shadow: inset 3px 0 0 var(--focus); }
     #source-view { padding: 16px; }
     #editor { width: 100%; min-height: 100%; resize: none; border: 1px solid var(--border); border-radius: 6px; padding: 14px; background: var(--surface); line-height: 1.55; font-family: ui-monospace, "Cascadia Code", monospace; }
     .footer-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding-top: 10px; }
@@ -98,7 +80,7 @@
       .toolbar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; }
       .toolbar button { min-width: 0; min-height: 34px; padding: 5px 7px; font-size: 13px; }
       #canvas { padding: 18px 10px; }
-      th, td { min-width: 104px; }
+      #canvas-editor { min-height: 470px; }
       .review-dialog { width: calc(100% - 20px); max-height: 680px; }
       .review-header, .review-content { padding-right: 14px; padding-left: 14px; }
       .review-content { min-height: 300px; }
@@ -129,7 +111,9 @@
     </div>
 
     <section id="canvas-view" role="tabpanel" aria-labelledby="canvas-tab">
-      <div id="canvas" aria-label="可编辑上下文画布"></div>
+      <div id="canvas" aria-label="可编辑上下文画布">
+        <textarea id="canvas-editor" maxlength="1000000" spellcheck="true" aria-label="完整 Markdown 正文" aria-describedby="meta"></textarea>
+      </div>
     </section>
     <section id="source-view" role="tabpanel" aria-labelledby="source-tab" hidden>
       <label id="editor-label" for="editor">Markdown 源码</label>

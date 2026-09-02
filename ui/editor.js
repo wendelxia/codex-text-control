@@ -1,10 +1,10 @@
 (function () {
   "use strict";
 
-  const model = window.CodexCanvasModel;
   const $ = (id) => document.getElementById(id);
   const editor = $("editor");
   const canvas = $("canvas");
+  const canvasEditor = $("canvas-editor");
   const status = $("status");
   const reviewDialog = $("review-dialog");
   const reviewContent = $("review-content");
@@ -20,7 +20,6 @@
     mode: "full",
     extension: null,
     view: "canvas",
-    blocks: [],
     dirty: false,
     editVersion: 0,
     pendingNotice: null,
@@ -64,7 +63,8 @@
     $("review-cancel").disabled = busy;
     $("review-submit").disabled = unavailable || busy;
     editor.readOnly = busy;
-    for (const input of canvas.querySelectorAll("textarea, input")) input.disabled = busy;
+    canvasEditor.readOnly = busy;
+    canvasEditor.disabled = busy;
   };
   const setBridgeStatus = (bridgeStatus) => {
     if (!bridgeStatus || typeof bridgeStatus !== "object") return;
@@ -77,15 +77,10 @@
   };
   const currentMarkdown = () => state.mode === "extension" || state.view === "source"
     ? editor.value
-    : model.serializeMarkdown(state.blocks);
+    : canvasEditor.value;
   const validateContent = (content) => {
     if (!content.trim()) throw new Error("上下文正文不能为空。");
     if (content.length > state.limits.content) throw new Error(`上下文正文不能超过 ${state.limits.content} 个字符。`);
-  };
-  const autoSize = (input) => {
-    if (!input?.style) return;
-    input.style.height = "auto";
-    input.style.height = `${Math.max(20, Number(input.scrollHeight) || 34)}px`;
   };
   const rememberRevision = (revision) => {
     if (!revision?.id) throw new Error("工具没有返回修订版本编号。");
@@ -157,79 +152,23 @@
     renderMeta();
     setStatus("修改仅保存在当前画布，点击完成编辑后保存。", "warning");
   };
-  const renderTable = (block, blockIndex) => {
-    const wrapper = document.createElement("section");
-    wrapper.className = "table-block";
-
-    const scroll = document.createElement("div");
-    scroll.className = "table-scroll";
-    const table = document.createElement("table");
-    const body = document.createElement("tbody");
-    block.rows.forEach((row, rowIndex) => {
-      const tr = document.createElement("tr");
-      row.forEach((value, columnIndex) => {
-        const cell = document.createElement(rowIndex === 0 ? "th" : "td");
-        const input = document.createElement("input");
-        input.type = "text";
-        input.className = "cell-input";
-        input.value = value;
-        input.setAttribute("aria-label", `${rowIndex === 0 ? "表头" : `第 ${rowIndex} 行`}第 ${columnIndex + 1} 列`);
-        input.addEventListener("input", () => {
-          state.blocks[blockIndex] = model.updateTableCell(state.blocks[blockIndex], rowIndex, columnIndex, input.value);
-          markDirty();
-        });
-        cell.append(input);
-        tr.append(cell);
-      });
-      body.append(tr);
-    });
-    table.append(body);
-    scroll.append(table);
-    wrapper.append(scroll);
-    return wrapper;
+  const ensureCanvasEditor = () => {
+    if (canvasEditor.parentElement !== canvas) canvas.append(canvasEditor);
   };
-  const renderTextBlock = (block, blockIndex) => {
-    const wrapper = document.createElement("div");
-    wrapper.className = `canvas-block ${block.type}`;
-    const prefix = document.createElement("span");
-    prefix.className = "block-prefix";
-    prefix.textContent = block.type === "heading" ? block.prefix.trim() : String(block.prefix || "").trim();
-    const input = document.createElement("textarea");
-    input.className = "block-input";
-    input.rows = block.type === "code" ? 5 : 1;
-    input.value = block.type === "code" ? String(block.raw || "") : String(block.text || "");
-    input.setAttribute("aria-label", block.type === "code" ? "代码块" : `上下文${blockIndex + 1}`);
-    input.addEventListener("input", () => {
-      if (block.type === "code") state.blocks[blockIndex] = { ...state.blocks[blockIndex], raw: input.value };
-      else if (block.type === "blank" && input.value) state.blocks[blockIndex] = { type: "text", text: input.value };
-      else state.blocks[blockIndex] = { ...state.blocks[blockIndex], text: input.value };
-      autoSize(input);
-      markDirty();
-    });
-    wrapper.append(prefix, input);
-    setTimeout(() => autoSize(input), 0);
-    return wrapper;
-  };
-  function renderCanvas() {
-    canvas.replaceChildren();
-    if (!state.blocks.length) state.blocks = [{ type: "text", text: "" }];
-    state.blocks.forEach((block, blockIndex) => canvas.append(
-      block.type === "table" ? renderTable(block, blockIndex) : renderTextBlock(block, blockIndex),
-    ));
-  }
   function applyMarkdown(markdown) {
     const text = String(markdown ?? "");
+    ensureCanvasEditor();
     editor.value = text;
-    state.blocks = model.parseMarkdown(text);
-    renderCanvas();
+    canvasEditor.value = text;
   }
   const setView = (view) => {
+    if (view === state.view) return;
     if (view === "canvas" && state.mode === "extension") return;
     if (view === "canvas") {
-      state.blocks = model.parseMarkdown(editor.value);
-      renderCanvas();
+      ensureCanvasEditor();
+      canvasEditor.value = editor.value;
     } else {
-      editor.value = model.serializeMarkdown(state.blocks);
+      editor.value = canvasEditor.value;
     }
     state.view = view;
     $("canvas-view").hidden = view !== "canvas";
@@ -389,7 +328,7 @@
     await finishEditing(content, editVersion);
   };
   const loadData = (data) => {
-    if (!data || typeof data !== "object" || !model) return;
+    if (!data || typeof data !== "object") return;
     const projectArrived = typeof data.projectDir === "string" && Boolean(data.projectDir.trim());
     if (projectArrived) {
       state.projectDir = data.projectDir;
@@ -413,9 +352,11 @@
       state.extension = state.mode === "extension" && data.extension && typeof data.extension === "object" ? { ...data.extension } : null;
       $("history-panel").hidden = state.mode === "extension";
       $("editor-label").textContent = state.mode === "extension" ? `扩展内容：${String(state.extension?.name || "未命名")}` : "Markdown 源码";
-      if (typeof data.sourceText === "string") applyMarkdown(data.sourceText);
+      const sourceText = typeof data.sourceText === "string" ? data.sourceText : null;
+      if (sourceText !== null) applyMarkdown(sourceText);
       setView(state.mode === "extension" ? "source" : "canvas");
-      state.dirty = false;
+      const baseline = state.mode === "extension" ? state.extension?.currentContent : state.current?.content;
+      state.dirty = sourceText !== null && sourceText !== String(baseline ?? "");
       state.pendingNotice = null;
     }
     if (incomingRenderId) state.renderId = incomingRenderId;
@@ -446,6 +387,7 @@
     closeReview();
   });
   editor.addEventListener("input", markDirty);
+  canvasEditor.addEventListener("input", markDirty);
   window.addEventListener("openai:set_globals", (event) => {
     const globals = event.detail?.globals;
     setBridgeStatus(globals?.codexTextControlBridgeStatus);
@@ -456,10 +398,6 @@
     if (event.data?.method === "ui/notifications/tool-result") loadData(result?._meta?.widgetData || result?.structuredContent);
   });
 
-  if (!model) {
-    setStatus("上下文画布模型未加载，请关闭后重试。", "error");
-    return;
-  }
   setBridgeStatus(window.openai?.codexTextControlBridgeStatus || { state: window.codexTextControlMcp ? "ready" : "connecting" });
   loadData(window.openai?.toolOutput);
 })();
