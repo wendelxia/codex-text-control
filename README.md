@@ -218,7 +218,7 @@ Codex 读取当前权威上下文
 | [`docs/design/architecture.md`](docs/design/architecture.md) | 维护者：系统边界、数据流、失败恢复和架构决定 |
 | [`docs/design/context-canvas-0.5.4.md`](docs/design/context-canvas-0.5.4.md) | 维护者：取消实时保存和长文内部滚动的设计依据 |
 | [`docs/evidence/README.md`](docs/evidence/README.md) | 评审者：全部验证、真实宿主、截图和调研证据索引 |
-| [`docs/evidence/verification-0.5.8-2026-09-01.md`](docs/evidence/verification-0.5.8-2026-09-01.md) | 评审者：当前源码候选的并发、原文保真和自动化证据 |
+| [`docs/evidence/verification-0.5.8-2026-09-01.md`](docs/evidence/verification-0.5.8-2026-09-01.md) | 评审者：0.5.8 源码候选的并发、原文保真和自动化证据 |
 | [`docs/evidence/verification-0.5.9-2026-09-02.md`](docs/evidence/verification-0.5.9-2026-09-02.md) | 评审者：0.5.9 单一连续正文画布改动和交互回归证据 |
 | [`docs/evidence/verification-0.5.7-2026-09-01.md`](docs/evidence/verification-0.5.7-2026-09-01.md) | 评审者：最后一个已安装构建的真实宿主证据 |
 | [`docs/evidence/real-host-multi-test-0.5.3-2026-09-01.md`](docs/evidence/real-host-multi-test-0.5.3-2026-09-01.md) | 评审者：真实多场景测试、失败项和后续修复来源 |
