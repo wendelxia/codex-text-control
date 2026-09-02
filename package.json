@@ -1,6 +1,6 @@
 {
   "name": "codex-text-control",
-  "version": "0.5.8",
+  "version": "0.5.9",
   "description": "在 Codex 上下文画布中直接编辑文字和表格，并在完成编辑时保存权威版本。",
   "private": true,
   "license": "MIT",

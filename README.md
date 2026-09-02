@@ -3,8 +3,8 @@
 <div align="center">
   <p><strong>在 Codex 里直接修改当前权威上下文。检查完整原文后，再把一次确认保存成可追踪版本。</strong></p>
   <p>
-    <a href="docs/evidence/verification-0.5.8-2026-09-01.md"><img alt="状态：源码候选版" src="https://img.shields.io/badge/status-source_candidate-f59e0b"></a>
-    <img alt="版本：0.5.8" src="https://img.shields.io/badge/version-0.5.8-2563eb">
+    <a href="docs/evidence/verification-0.5.9-2026-09-02.md"><img alt="状态：预发布候选" src="https://img.shields.io/badge/status-pre--release_candidate-f59e0b"></a>
+    <img alt="版本：0.5.9" src="https://img.shields.io/badge/version-0.5.9-2563eb">
     <img alt="Node.js（JavaScript 运行时）22 或更高版本" src="https://img.shields.io/badge/Node.js-%3E%3D22-339933?logo=nodedotjs&logoColor=white">
     <a href="https://github.com/wendelxia/codex-text-control/actions/workflows/quality.yml"><img alt="持续集成状态" src="https://github.com/wendelxia/codex-text-control/actions/workflows/quality.yml/badge.svg"></a>
     <a href="LICENSE"><img alt="MIT 许可证" src="https://img.shields.io/badge/license-MIT-0f766e"></a>
@@ -28,13 +28,13 @@
 <p align="center"><strong><a href="docs/media/codex-text-control-overview/codex-text-control-overview.mp4">Watch the English-narrated overview with Simplified Chinese subtitles</a></strong></p>
 <!-- PUBLIC_MEDIA:END -->
 
-![Codex Text Control 主画布：直接编辑文字和 Markdown 表格](docs/evidence/screenshots/context-canvas-0.5.5-desktop-focused.png)
+![Codex Text Control 历史画布界面截图（0.5.5）](docs/evidence/screenshots/context-canvas-0.5.5-desktop-focused.png)
 
-> 主画布外观基线：文字直接编辑、Markdown 表格单元格可直接修改、控制区在长文中保持可见。`0.5.7` 在真实 Codex 中完成了“编辑 -> 原文检查 -> 确认提交”闭环；`0.5.8` 又增加跨进程原子状态转换和未编辑原文保真，仍待重新安装后的真实宿主复验。
+> 上图是 0.5.5 的历史视觉基线；`0.5.9` 的画布已改为一个连续 Markdown 文本流，可一次全选、复制和修改，表格不再拆成单元格或逐行输入框。`0.5.7` 在真实 Codex 中完成了“编辑 -> 原文检查 -> 确认提交”闭环；`0.5.9` 还保留 `0.5.8` 的跨进程原子状态转换和原文保真能力，真实宿主复验仍需重新安装。
 
-Codex Text Control 是一个本地 Codex 插件。它不改写已经显示的聊天消息，而是在项目内维护一份后续对话优先读取的权威 Markdown（轻量标记文本格式）。用户可以像改画布一样删、增、改文字和表格；编辑期间不写盘，只有检查完整原文并点击“确认提交”后，才生成一个不可变修订并更新权威指针。
+Codex Text Control 是一个本地 Codex 插件。它不改写已经显示的聊天消息，而是在项目内维护一份后续对话优先读取的权威 Markdown（轻量标记文本格式）。用户在一个连续正文编辑器里直接删、增、改整份文字和表格 Markdown；编辑期间不写盘，只有检查完整原文并点击“确认提交”后，才生成一个不可变修订并更新权威指针。
 
-> **当前状态：`0.5.8` 源码候选版。** `0.5.7` 已在当前 Windows Codex 桌面宿主完成核心点击闭环；`0.5.8` 的自动化、跨进程并发和原文保真检查已通过，但尚未重新安装进真实宿主。项目也还没有公开发行版、跨平台真实宿主结果或外部权威能力基准，因此这里不声称“生产可用”“领先同类”或“任何环境都能安装”。
+> **当前状态：`0.5.9` 预发布候选版。** `0.5.7` 已在当前 Windows Codex 桌面宿主完成核心点击闭环；`0.5.9` 的自动化、跨进程并发、原文保真和连续正文交互检查已通过，但公开 Release 和重新安装后的真实宿主复验尚未完成。项目也还没有跨平台真实宿主结果或外部权威能力基准，因此这里不声称“生产可用”“领先同类”或“任何环境都能安装”。
 
 ## 为什么需要它
 
@@ -62,7 +62,7 @@ Codex Text Control 是一个本地 Codex 插件。它不改写已经显示的聊
 
 然后完成一次闭环：
 
-1. 在“画布”里直接改正文或表格；复杂 Markdown 可以切到“源码”。
+1. 在“画布”里直接修改连续正文，Markdown 表格也按原文编辑；复杂 Markdown 可以切到“源码”。
 2. 点击“完成编辑”。
 3. 在弹窗中检查即将提交的完整原文。
 4. 需要继续修改就点“返回修改”；确认无误后点“确认提交”。
@@ -72,7 +72,7 @@ Codex Text Control 是一个本地 Codex 插件。它不改写已经显示的聊
 
 ### 从源码验证
 
-当前公开仓库提供源码和可复现检查，但尚未提供发行版或一键安装入口：
+当前公开仓库提供源码和可复现检查；`0.5.9` 预发布候选仍需通过 GitHub Actions 后才会建立 GitHub Release，且尚未提供一键安装入口：
 
 ```powershell
 git clone https://github.com/wendelxia/codex-text-control.git
@@ -98,8 +98,8 @@ codex plugin add codex-text-control@personal
 
 | 能力 | 用户得到什么 | 明确边界 |
 | --- | --- | --- |
-| 直接编辑正文 | 点击文字即可修改，不出现覆盖整行的输入框 | 常用 Markdown 可视化；复杂语法用源码视图 |
-| 编辑 Markdown 表格 | 直接修改单元格，最终仍保存为 Markdown | 不支持合并单元格、单元格内多行和嵌套表格 |
+| 连续正文编辑 | 一个全文编辑器承载所有段落和 Markdown，支持 `Ctrl+A` 全选、复制和粘贴 | 画布不提供逐块视觉结构；复杂语法可切到源码视图 |
+| 编辑 Markdown 表格 | 表格和其他文字一起作为原文编辑，最终仍保存为 Markdown | 不提供单元格级工具或自动格式化，需按 Markdown 原文修改 |
 | 提交前原文检查 | 保存前查看完整待提交正文，可返回继续改 | 检查弹窗只读，不承担差异对比 |
 | 不可变修订 | 每次确认保存完整快照，旧版本不被覆盖 | 当前没有真正的逐行差异视图 |
 | 权威上下文指针 | 后续回答读取用户最后确认的版本 | 不能原地改写已经显示的历史消息 |
@@ -178,7 +178,7 @@ Codex 读取当前权威上下文
 | --- | --- | --- |
 | MCP 与存储代码 | `mcp/` | 校验输入、保存修订、用不可变状态转换解决同目录多进程竞争；不提供跨机器分布式事务 |
 | 画布界面 | `ui/editor.html`、`ui/editor.js` | 负责视图、编辑和提交前检查，不直接操作文件 |
-| Markdown 画布模型 | `ui/canvas-model.js` | 确定性解析和序列化；不依赖大模型，但只覆盖声明的常用语法 |
+| Markdown 画布模型 | `ui/canvas-model.js` | 旧版本解析/序列化兼容与独立测试；当前连续正文画布不再依赖它重排文本 |
 | 模型路由规则 | [`skills/codex-text-control/SKILL.md`](skills/codex-text-control/SKILL.md) | 决定何时打开画布和何时读取最新版；不能代替后端权限边界 |
 | 自动测试 | `tests/` | 覆盖存储、表格、扩展点、交互、权限和失败恢复 |
 | 可重复探针 | `scripts/probe-mcp.mjs` | 从 MCP 客户端侧检查公开工具闭环 |
@@ -191,16 +191,16 @@ Codex 读取当前权威上下文
 
 | 层级 | 当前证据 | 能证明什么 | 不能证明什么 |
 | --- | --- | --- | --- |
-| 自动测试 | `74/74` 通过 | 已覆盖的存储、跨进程并发、历史恢复、原文保真、画布、权限和交互契约未失败 | 不能代替真实 Codex 宿主 |
+| 自动测试 | `0.5.9` 候选 `95/95` 通过 | 已覆盖的存储、跨进程并发、历史恢复、原文保真、连续正文画布、AI 候选确认、失败重试、权限和交互契约未失败 | 不能代替真实 Codex 宿主 |
 | 重复稳定性 | 同一 `0.5.8` 候选连续 10 次，共 `740/740` 项通过，失败运行 `0` | 当前机器和样本下未观察到不稳定运行 | 不能证明长期运行永不失败 |
 | 并发压力 | 修复前 6 个并行完整套件 `0/6` 通过；修复后 `6/6` 通过，共 `444/444` 项 | 已关闭“相同正文并发被误判为历史恢复”的已知竞态 | 只覆盖当前 Windows 本地文件系统和冻结压力形状 |
 | MCP 探针与语法 | `npm run quality` 通过 | 工具协议、脚本语法和受控闭环一致 | 不能证明所有宿主版本兼容 |
 | 干净克隆 | 全新本地克隆执行 `npm ci --ignore-scripts` 后，`74/74`、语法检查和 MCP 探针通过，工作树干净 | 结果不依赖开发目录已有 `node_modules` 或未跟踪源码 | 不是第二位用户或第二个操作系统的独立复现 |
-| 真实宿主 | `0.5.7+codex.20260901154437` 在当前 Windows Codex 中完成“修改 -> 原文检查 -> 返回修改 -> 再检查 -> 确认提交 -> 回读” | 只证明最后一个已安装构建的当前环境闭环 | `0.5.8` 改过存储和画布模型，不能继承这项宿主结论 |
+| 真实宿主 | `0.5.7+codex.20260901154437` 在当前 Windows Codex 中完成“修改 -> 原文检查 -> 返回修改 -> 再检查 -> 确认提交 -> 回读” | 只证明最后一个已安装构建的当前环境闭环 | `0.5.9` 改过画布交互，不能继承这项宿主结论 |
 | 供应链检查 | 生产依赖已知高危漏洞 `0`，签名 `96`，来源证明 `11` | npm 当前数据源未报告对应问题 | 不能证明依赖没有未知漏洞 |
-| 公开仓库 | 已建立 | `main` 已公开，GitHub Actions 会在 Windows、Linux 和 Node.js 22、24 上运行质量链 | 还没有发行版、陌生用户独立安装或长期维护承诺 |
+| 公开仓库与预发布候选 | 候选待发布 | `main` 已公开，GitHub Actions 会在 Windows、Linux 和 Node.js 22、24 上运行质量链；`v0.5.9` 本地候选门槛已通过 | 还没有公开 Release、陌生用户独立安装或长期维护承诺 |
 
-最新真实宿主提交版本为 `rev-1788249723947-c7d6a499`，对应 `0.5.7`。`0.5.8` 的并发失败复现、修复和原文保真结果见 [`0.5.8 验证记录`](docs/evidence/verification-0.5.8-2026-09-01.md)。当前缺少适用于“Codex 上下文画布”的外部权威能力基准，因此不能用 GitHub 星数、同类项目知名度或内部测试数量声称能力领先。
+最新真实宿主提交版本为 `rev-1788249723947-c7d6a499`，对应 `0.5.7`。`0.5.9` 的连续正文结果见 [`0.5.9 验证记录`](docs/evidence/verification-0.5.9-2026-09-02.md)，底层并发失败复现、修复和原文保真结果见 [`0.5.8 验证记录`](docs/evidence/verification-0.5.8-2026-09-01.md)。当前缺少适用于“Codex 上下文画布”的外部权威能力基准，因此不能用 GitHub 星数、同类项目知名度或内部测试数量声称能力领先。
 
 ## 已知限制
 
@@ -208,7 +208,7 @@ Codex 读取当前权威上下文
 - 未点击“确认提交”就关闭画布时，当前本地草稿不会写入版本历史，也不承诺恢复。
 - 没有逐行差异视图、公开安全联系人或跨平台真实宿主证据；不可变状态转换不是跨机器分布式事务，网络文件系统语义尚未验证。
 - 项目目录依赖 Codex 提供当前工作区；缺少目录时会明确拒绝，不会猜测或退回插件安装缓存。
-- 当前只适合从源码试用和继续验证；公开仓库不等于已经达到正式发行或生产可用。
+- 当前只适合从源码继续验证；预发布候选不等于已经建立公开 Release、达到稳定发行或生产可用。
 
 ## 文档导航
 
@@ -219,6 +219,7 @@ Codex 读取当前权威上下文
 | [`docs/design/context-canvas-0.5.4.md`](docs/design/context-canvas-0.5.4.md) | 维护者：取消实时保存和长文内部滚动的设计依据 |
 | [`docs/evidence/README.md`](docs/evidence/README.md) | 评审者：全部验证、真实宿主、截图和调研证据索引 |
 | [`docs/evidence/verification-0.5.8-2026-09-01.md`](docs/evidence/verification-0.5.8-2026-09-01.md) | 评审者：当前源码候选的并发、原文保真和自动化证据 |
+| [`docs/evidence/verification-0.5.9-2026-09-02.md`](docs/evidence/verification-0.5.9-2026-09-02.md) | 评审者：0.5.9 单一连续正文画布改动和交互回归证据 |
 | [`docs/evidence/verification-0.5.7-2026-09-01.md`](docs/evidence/verification-0.5.7-2026-09-01.md) | 评审者：最后一个已安装构建的真实宿主证据 |
 | [`docs/evidence/real-host-multi-test-0.5.3-2026-09-01.md`](docs/evidence/real-host-multi-test-0.5.3-2026-09-01.md) | 评审者：真实多场景测试、失败项和后续修复来源 |
 | [`docs/evidence/github-readme-benchmark-2026-09-01.md`](docs/evidence/github-readme-benchmark-2026-09-01.md) | 维护者：本次 GitHub README 对照来源与采用理由 |
@@ -232,4 +233,4 @@ Codex 读取当前权威上下文
 
 项目使用 [MIT 许可证](LICENSE)，另有[中文说明](LICENSE.zh-CN.md)。第三方依赖与许可证说明见 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)。
 
-客观评价：这个项目已经从“聊天里再复制一份全文”走到可实际点击的项目级上下文画布；并发覆盖和非目标全文重排也有失败复现与回归测试。公开源码和持续集成入口已经建立，但距离成熟公开项目仍差 `0.5.8` 真实宿主复验、公开安装、陌生用户复现、跨平台真实宿主结果和外部基准。README（仓库首页说明）只按证据说明当前阶段，不把文档完整度冒充产品成熟度。
+客观评价：这个项目已经从“聊天里再复制一份全文”走到可实际点击的项目级上下文画布；并发覆盖和非目标全文重排也有失败复现与回归测试。公开源码和持续集成入口已经建立，`0.5.9` 预发布候选也已通过本地门槛，但仍需 GitHub Actions、公开 Release、真实宿主复验、陌生用户复现、跨平台真实宿主结果和外部基准。README（仓库首页说明）只按证据说明当前阶段，不把文档完整度冒充产品成熟度。
