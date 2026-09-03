@@ -4,8 +4,8 @@
 
 <div align="center">
   <p>
-    <a href="https://github.com/wendelxia/codex-text-control/releases/tag/v0.5.10"><img alt="status: pre-release" src="https://img.shields.io/badge/status-pre--release-f59e0b"></a>
-    <img alt="version: 0.5.10" src="https://img.shields.io/badge/version-0.5.10-2563eb">
+    <a href="https://github.com/wendelxia/codex-text-control/releases/tag/v0.5.11"><img alt="status: pre-release" src="https://img.shields.io/badge/status-pre--release-f59e0b"></a>
+    <img alt="version: 0.5.11" src="https://img.shields.io/badge/version-0.5.11-2563eb">
     <img alt="Node.js >= 22" src="https://img.shields.io/badge/Node.js-%3E%3D22-339933?logo=nodedotjs&logoColor=white">
     <a href="https://github.com/wendelxia/codex-text-control/actions/workflows/quality.yml"><img alt="CI" src="https://github.com/wendelxia/codex-text-control/actions/workflows/quality.yml/badge.svg"></a>
     <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-0f766e"></a>
@@ -52,8 +52,8 @@ npm run verify:candidate
 
 ## Evidence
 
-- 0.5.10 public pre-release
-- `112/112` automated tests
+- 0.5.11 public pre-release
+- `113/113` automated tests
 - `npm run check`
 - `npm run probe:mcp`
 - user-reported real-host reinstall-and-click verification

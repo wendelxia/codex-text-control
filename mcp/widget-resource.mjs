@@ -13,7 +13,7 @@ export function createWidgetBridge({
   CustomEventClass,
   connectTimeoutMs = 15_000,
   requestTimeoutMs = 30_000,
-  appVersion = "0.5.10",
+  appVersion = "0.5.11",
 } = {}) {
   const eventClass = CustomEventClass || target?.CustomEvent;
   const publish = (globals) => {

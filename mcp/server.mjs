@@ -38,7 +38,7 @@ const widgetToolMeta = (invoking, invoked) => ({
 });
 
 const server = new McpServer(
-  { name: "codex-text-control", version: "0.5.10" },
+  { name: "codex-text-control", version: "0.5.11" },
   {
     instructions:
       "Codex Text Control provides a continuous Markdown canvas for direct text editing. Every tool call must pass the current workspace root projectDir explicitly. The editor keeps local drafts only during editing; after the user finishes, the widget saves an immutable revision, updates the authoritative pointer, and sends a versioned confirmation back to the conversation. Models should read full content from get_authoritative_context. This surface is for one single continuous Markdown body, not split blocks or line-by-line rewriting.",

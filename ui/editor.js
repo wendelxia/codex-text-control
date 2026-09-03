@@ -468,6 +468,15 @@
   };
   const loadData = (data) => {
     if (!data || typeof data !== "object") return;
+    const incomingRenderId = typeof data.renderId === "string" ? data.renderId : "";
+    const incomingSourceText = data.sourceKind === "draft" && data.draft?.content && !data.draft.conflict
+      ? String(data.draft.content)
+      : typeof data.sourceText === "string" ? data.sourceText : null;
+    const isNewRender = Boolean(incomingRenderId && incomingRenderId !== state.renderId);
+    const isFirstPayload = !state.renderId && (typeof data.mode === "string" || typeof data.sourceText === "string");
+    // A reused host iframe can briefly deliver a new title/renderId without the matching body.
+    // Treat a render as one atomic packet so old body text cannot sit under a new title.
+    if ((isNewRender || isFirstPayload) && incomingSourceText === null) return;
     const projectArrived = typeof data.projectDir === "string" && Boolean(data.projectDir.trim());
     if (projectArrived) {
       state.projectDir = data.projectDir;
@@ -485,9 +494,6 @@
       $("page-title").textContent = data.title.trim();
       document.title = data.title.trim();
     }
-    const incomingRenderId = typeof data.renderId === "string" ? data.renderId : "";
-    const isNewRender = Boolean(incomingRenderId && incomingRenderId !== state.renderId);
-    const isFirstPayload = !state.renderId && (typeof data.mode === "string" || typeof data.sourceText === "string");
     if (isNewRender || isFirstPayload) {
       if (reviewDialog.open) reviewDialog.close();
       clearReview();
@@ -495,9 +501,7 @@
       state.extension = state.mode === "extension" && data.extension && typeof data.extension === "object" ? { ...data.extension } : null;
       $("history-panel").hidden = state.mode === "extension";
       $("editor-label").textContent = state.mode === "extension" ? `扩展内容：${String(state.extension?.name || "未命名")}` : "Markdown 源码";
-      const sourceText = data.sourceKind === "draft" && data.draft?.content && !data.draft.conflict
-        ? String(data.draft.content)
-        : typeof data.sourceText === "string" ? data.sourceText : null;
+      const sourceText = incomingSourceText;
       if (sourceText !== null) applyMarkdown(sourceText);
       setView(state.mode === "extension" ? "source" : "canvas");
       const baseline = state.mode === "extension" ? state.extension?.currentContent : state.current?.content;

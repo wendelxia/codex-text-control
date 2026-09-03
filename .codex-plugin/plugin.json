@@ -1,6 +1,6 @@
 {
   "name": "codex-text-control",
-  "version": "0.5.10+codex.20260902232459",
+  "version": "0.5.11+codex.20260903171439",
   "description": "Edit a single continuous Markdown body in Codex and save an authoritative revision when finished.",
   "author": {
     "name": "Codex Text Control contributors"

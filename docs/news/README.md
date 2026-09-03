@@ -6,6 +6,8 @@ Its input is a frozen release scope, verified project evidence, and the matching
 
 ## Releases
 
+- [Codex Text Control 0.5.11 Fixes Mixed Widget Payloads](2026-09-03-codex-text-control-0.5.11.md)
+
 - [Codex Text Control 0.5.10 Adds Recoverable Drafts and Conflict Checks](2026-09-02-codex-text-control-0.5.10.md)
 - [Codex Text Control 0.5.9 Replaces Block Editing with One Continuous Context Canvas](2026-09-02-codex-text-control-0.5.9.md)
 

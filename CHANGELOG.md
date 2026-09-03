@@ -2,6 +2,21 @@
 
 本文件记录用户能感知的变化、修复、已知限制和回退方法。版本号遵循 Semantic Versioning（语义化版本）：`主版本.次版本.修订版本`。
 
+## [0.5.11] - 2026-09-03
+
+### Fixed
+
+- Keep title, body, and render identity atomic when a reused Codex host delivers a partial widget payload. A title-only payload no longer advances the canvas to a mixed state, and the matching body can still arrive under the same render ID.
+
+### Verification
+
+- Focused widget and MCP contract tests pass: `49/49`.
+- The regression test covers a partial new render followed by its complete body payload.
+
+### Known limitation
+
+- This patch fixes the verified client-side mixed-payload path. It does not provide a cross-platform real-host matrix or an external authoritative usability benchmark.
+
 ## [0.5.10] - 2026-09-02
 
 ### Changed

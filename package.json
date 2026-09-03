@@ -1,6 +1,6 @@
 {
   "name": "codex-text-control",
-  "version": "0.5.10",
+  "version": "0.5.11",
   "description": "Edit one continuous context body in Codex and save an authoritative revision when finished.",
   "private": true,
   "license": "MIT",

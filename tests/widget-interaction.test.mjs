@@ -486,6 +486,61 @@ test("同一 Widget 的新渲染刷新正文，重复宿主事件不覆盖用户
   assert.equal(harness.element("editor").value, "新请求后的用户编辑");
 });
 
+test("新渲染缺少正文时不允许只更新标题造成标题正文串线", async () => {
+  const harness = await createHarness({
+    toolOutput: {
+      mode: "full",
+      renderId: "render-old",
+      projectDir: "/workspace/demo",
+      title: "旧标题",
+      sourceText: "旧正文",
+      revisions: [],
+      current: null,
+    },
+  });
+  assert.equal(harness.element("page-title").textContent, "旧标题");
+  assert.equal(harness.element("editor").value, "旧正文");
+
+  harness.window.dispatchEvent({
+    type: "openai:set_globals",
+    detail: {
+      globals: {
+        toolOutput: {
+          mode: "full",
+          renderId: "render-new",
+          projectDir: "/workspace/demo",
+          title: "新标题",
+          revisions: [],
+          current: null,
+        },
+      },
+    },
+  });
+
+  assert.equal(harness.element("page-title").textContent, "旧标题");
+  assert.equal(harness.element("editor").value, "旧正文");
+
+  harness.window.dispatchEvent({
+    type: "openai:set_globals",
+    detail: {
+      globals: {
+        toolOutput: {
+          mode: "full",
+          renderId: "render-new",
+          projectDir: "/workspace/demo",
+          title: "新标题",
+          sourceText: "新正文",
+          revisions: [],
+          current: null,
+        },
+      },
+    },
+  });
+
+  assert.equal(harness.element("page-title").textContent, "新标题");
+  assert.equal(harness.element("editor").value, "新正文");
+});
+
 test("输入停顿会保存草稿，下一次打开可恢复且不提交正式版本", async () => {
   const calls = [];
   const current = { id: "rev-current", revisionId: "rev-current", content: "原始权威正文" };
