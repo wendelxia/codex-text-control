@@ -53,7 +53,7 @@ npm run verify:candidate
 ## Evidence
 
 - 0.5.11 public pre-release
-- `113/113` automated tests
+- `114/114` automated tests
 - `npm run check`
 - `npm run probe:mcp`
 - user-reported real-host reinstall-and-click verification

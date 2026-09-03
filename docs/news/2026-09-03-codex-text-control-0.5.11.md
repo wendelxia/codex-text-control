@@ -2,9 +2,9 @@
 
 Codex Text Control 0.5.11 fixes a canvas failure where a reused Codex widget could show a current title above text from an older conversation.
 
-The fix keeps the title, Markdown body, and render identity together. If the host briefly delivers a title-only payload, the canvas keeps the previous complete state. The new title is applied only when the matching body arrives, so users do not review or submit a mixed document by mistake.
+The fix keeps the title, Markdown body, and render identity together. If the host briefly delivers a title-only payload, the canvas keeps the previous complete state. If a tool call provides a custom title for a new response, it must also provide the matching candidate body; otherwise the server rejects the render instead of opening older authoritative text under the new title.
 
-The regression test covers the exact sequence: an old complete render, a partial new render, then the complete new body under the same render ID. Focused widget and MCP contract tests pass (`49/49`).
+The regression tests cover two failure shapes: an old complete render followed by a partial new render, and a custom-title render that omits the matching body while older authoritative text exists. Focused widget and MCP contract tests pass (`50/50`).
 
 This is a public pre-release patch. It does not claim production readiness, cross-platform host compatibility, or an external authoritative usability benchmark.
 

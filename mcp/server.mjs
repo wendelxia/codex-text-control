@@ -66,7 +66,7 @@ registerAppTool(
   {
     title: "Open context canvas",
     description:
-      "Open the Codex context canvas. Pass the current workspace root projectDir. Full-canvas mode uses one continuous Markdown editor, so text and tables stay in a single editable body; extension mode edits only the named block, and the fixed body is kept out of model rewriting. This is the single continuous Markdown body surface, with no split blocks or line-number style editing.",
+      "Open the Codex context canvas. Pass the current workspace root projectDir. Full-canvas mode uses one continuous Markdown editor, so text and tables stay in a single editable body; extension mode edits only the named block, and the fixed body is kept out of model rewriting. If you pass a custom title for a new response, pass the matching sourceText in the same call. This is the single continuous Markdown body surface, with no split blocks or line-number style editing.",
     inputSchema: {
       ...projectArgs,
       sourceText: z
@@ -99,6 +99,12 @@ registerAppTool(
     const explicitCandidate = point
       ? typeof input.extensionText === "string"
       : typeof input.sourceText === "string";
+    const explicitTitle = typeof input.title === "string" && input.title.trim().length > 0;
+    if (explicitTitle && !explicitCandidate) {
+      throw new Error(
+        "A custom title must be provided with the matching sourceText candidate body; it cannot be applied to older authoritative text or a recovered draft.",
+      );
+    }
     const draft = explicitCandidate
       ? null
       : await getContextDraft({

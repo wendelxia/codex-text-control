@@ -127,6 +127,29 @@ test("已有权威正文时可以省略候选正文直接打开画布", async ()
   }
 });
 
+test("自定义标题必须和候选正文一起提供，避免新标题串到旧权威正文", async () => {
+  const projectDir = await mkdtemp(join(tmpdir(), "codex-text-control-title-body-render-"));
+  const transport = new StdioClientTransport({ command: process.execPath, args: ["./scripts/start-mcp.mjs"] });
+  const client = new Client({ name: "codex-text-control-title-body-render-test", version: "0.5.11" });
+  await client.connect(transport);
+
+  try {
+    await client.callTool({
+      name: "update_authoritative_context",
+      arguments: { projectDir, content: "旧权威正文", expectedCurrentRevisionId: null },
+    });
+    const rendered = await client.callTool({
+      name: "render_text_control_widget",
+      arguments: { projectDir, title: "新回答标题" },
+    });
+    assert.equal(rendered.isError, true);
+    assert.match(rendered.content?.[0]?.text || "", /sourceText|custom title|candidate body/i);
+  } finally {
+    await client.close();
+    await rm(projectDir, { recursive: true, force: true });
+  }
+});
+
 test("明确提供本轮候选正文时，画布不会被项目里的旧权威正文串入", async () => {
   const projectDir = await mkdtemp(join(tmpdir(), "codex-text-control-stale-candidate-"));
   const transport = new StdioClientTransport({ command: process.execPath, args: ["./scripts/start-mcp.mjs"] });

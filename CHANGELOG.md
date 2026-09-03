@@ -7,11 +7,12 @@
 ### Fixed
 
 - Keep title, body, and render identity atomic when a reused Codex host delivers a partial widget payload. A title-only payload no longer advances the canvas to a mixed state, and the matching body can still arrive under the same render ID.
+- Reject custom-title renders that do not include the matching candidate body, so a new answer title cannot be displayed above older authoritative text or a recovered draft.
 
 ### Verification
 
-- Focused widget and MCP contract tests pass: `49/49`.
-- The regression test covers a partial new render followed by its complete body payload.
+- Focused widget and MCP contract tests pass: `50/50`.
+- The regression tests cover a partial new render followed by its complete body payload, and a custom-title render that omits the matching candidate body.
 
 ### Known limitation
 
