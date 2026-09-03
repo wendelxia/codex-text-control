@@ -1,7 +1,7 @@
 {
   "name": "codex-text-control",
-  "version": "0.5.9+codex.20260902133129",
-  "description": "\u5728 Codex \u4e0a\u4e0b\u6587\u753b\u5e03\u4e2d\u901a\u8fc7\u5355\u4e00\u8fde\u7eed Markdown \u6b63\u6587\u76f4\u63a5\u7f16\u8f91\uff0c\u5e76\u5728\u5b8c\u6210\u7f16\u8f91\u65f6\u4fdd\u5b58\u6743\u5a01\u7248\u672c\u3002",
+  "version": "0.5.10+codex.20260902232459",
+  "description": "Edit a single continuous Markdown body in Codex and save an authoritative revision when finished.",
   "author": {
     "name": "Codex Text Control contributors"
   },
@@ -15,8 +15,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Codex Text Control",
-    "shortDescription": "\u76f4\u63a5\u7f16\u8f91\u6743\u5a01\u4e0a\u4e0b\u6587\uff0c\u5b8c\u6210\u65f6\u4fdd\u5b58\u4e00\u4e2a\u4e0d\u53ef\u53d8\u7248\u672c\u3002",
-    "longDescription": "Codex Text Control\uff08Codex \u6587\u672c\u63a7\u5236\uff09\u63d0\u4f9b\u9879\u76ee\u5185\u7684\u4e0a\u4e0b\u6587\u753b\u5e03\u548c\u4e0d\u53ef\u53d8\u7248\u672c\u5e93\u3002\u7528\u6237\u5728\u4e00\u4e2a\u8fde\u7eed\u6b63\u6587\u7f16\u8f91\u5668\u4e2d\u76f4\u63a5\u4fee\u6539\u5b8c\u6574 Markdown\uff08\u5305\u62ec\u8868\u683c\uff09\u6216\u5207\u6362\u6e90\u7801\u89c6\u56fe\uff1b\u7f16\u8f91\u8fc7\u7a0b\u53ea\u4fdd\u7559\u672c\u5730\u8349\u7a3f\uff0c\u70b9\u51fb\u5b8c\u6210\u7f16\u8f91\u540e\u624d\u4fdd\u5b58\u4e00\u4e2a\u4e0d\u53ef\u53d8\u4fee\u8ba2\u3001\u66f4\u65b0\u6743\u5a01\u6307\u9488\uff0c\u5e76\u5411\u5f53\u524d Codex \u5bf9\u8bdd\u56de\u4f20\u4e00\u6b21\u7248\u672c\u901a\u77e5\u3002",
+    "shortDescription": "Edit authoritative context directly and save one immutable revision when finished.",
+    "longDescription": "Codex Text Control provides a continuous context canvas and immutable revision history. Edit the full Markdown body, including tables, in one editor or target a named AI extension point. Drafts stay local until you finish; the widget then saves an immutable revision, updates the authoritative pointer, and returns a versioned notice to the current Codex conversation.",
     "developerName": "Codex Text Control contributors",
     "category": "Productivity",
     "capabilities": [
@@ -29,9 +29,9 @@
       "Authoritative context commit"
     ],
     "defaultPrompt": [
-      "\u6253\u5f00\u4e0a\u4e0b\u6587\u7f16\u8f91\u5668\u5e76\u4fee\u6539\u5f53\u524d\u56de\u590d",
-      "\u5217\u51fa\u8fd9\u4e2a\u9879\u76ee\u7684\u4e0a\u4e0b\u6587\u7248\u672c",
-      "\u8bfb\u53d6\u5f53\u524d\u6743\u5a01\u4e0a\u4e0b\u6587"
+      "Open the context canvas and edit the current response",
+      "List the project's context revisions",
+      "Read the current authoritative context"
     ],
     "brandColor": "#1558A6"
   },

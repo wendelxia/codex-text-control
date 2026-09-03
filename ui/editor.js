@@ -19,6 +19,12 @@
     renderId: "",
     mode: "full",
     extension: null,
+    draft: null,
+    draftPersisted: false,
+    draftSaveTimer: null,
+    draftSaveInFlight: null,
+    draftOperation: null,
+    composing: false,
     view: "canvas",
     dirty: false,
     editVersion: 0,
@@ -59,6 +65,7 @@
     const busy = Boolean(state.busyAction);
     $("finish-editing").disabled = unavailable || busy;
     $("reset").disabled = busy || !(state.mode === "extension" ? typeof state.extension?.currentContent === "string" : state.current?.content);
+    $("load-draft").disabled = unavailable || busy || !state.draft?.content || !state.draft?.conflict;
     $("canvas-tab").disabled = state.mode === "extension";
     $("review-cancel").disabled = busy;
     $("review-submit").disabled = unavailable || busy;
@@ -78,6 +85,13 @@
   const currentMarkdown = () => state.mode === "extension" || state.view === "source"
     ? editor.value
     : canvasEditor.value;
+  const draftArguments = (content) => ({
+    projectDir: state.projectDir,
+    content,
+    baseRevisionId: state.current?.revisionId || state.current?.id || null,
+    mode: state.mode,
+    ...(state.mode === "extension" ? { extensionPoint: state.extension?.name || "" } : {}),
+  });
   const validateContent = (content) => {
     if (!content.trim()) throw new Error("上下文正文不能为空。");
     if (content.length > state.limits.content) throw new Error(`上下文正文不能超过 ${state.limits.content} 个字符。`);
@@ -146,10 +160,124 @@
       history.append(row);
     }
   };
-  const markDirty = () => {
+  const enqueueDraftOperation = (operation) => {
+    const previous = state.draftOperation;
+    const next = (previous ? previous.catch(() => {}) : Promise.resolve()).then(operation);
+    state.draftOperation = next;
+    next.then(
+      () => { if (state.draftOperation === next) state.draftOperation = null; },
+      () => { if (state.draftOperation === next) state.draftOperation = null; },
+    );
+    return next;
+  };
+  const waitForDraftOperations = async () => {
+    for (;;) {
+      const operation = state.draftOperation;
+      if (!operation) return;
+      await operation.catch(() => {});
+    }
+  };
+  const persistDraft = async () => {
+    for (;;) {
+      if (state.composing || !state.dirty || state.busyAction || state.bridgeState !== "ready" || !state.dataReady) return null;
+      const content = currentMarkdown();
+      try {
+        validateContent(content);
+      } catch {
+        return null;
+      }
+      const editVersion = state.editVersion;
+      if (state.draftOperation) {
+        await state.draftOperation.catch(() => {});
+        if (state.editVersion === editVersion && state.draft?.content === content) return state.draft;
+        continue;
+      }
+      const promise = enqueueDraftOperation(async () => {
+        const result = await tool("save_context_draft", draftArguments(content), "保存上下文草稿");
+        const draft = result.draft || { ...draftArguments(content), updatedAt: new Date().toISOString() };
+        if (state.editVersion === editVersion) {
+          state.draft = draft;
+          state.draftPersisted = true;
+          setStatus("未提交草稿已保存；完成编辑后才会更新权威版本。", "warning");
+        }
+        return draft;
+      }).catch((error) => {
+        if (state.editVersion === editVersion) setStatus(`草稿保存失败，但当前画布仍保留：${error?.message || "未知错误"}`, "warning");
+        return null;
+      });
+      state.draftSaveInFlight = promise;
+      try {
+        const draft = await promise;
+        if (state.editVersion !== editVersion) continue;
+        return draft;
+      } finally {
+        if (state.draftSaveInFlight === promise) state.draftSaveInFlight = null;
+      }
+    }
+  };
+  const scheduleDraftSave = () => {
+    if (state.draftSaveTimer) clearTimeout(state.draftSaveTimer);
+    state.draftSaveTimer = setTimeout(() => {
+      state.draftSaveTimer = null;
+      void persistDraft();
+    }, 350);
+  };
+  const flushDraft = async () => {
+    if (state.draftSaveTimer) {
+      clearTimeout(state.draftSaveTimer);
+      state.draftSaveTimer = null;
+    }
+    return persistDraft();
+  };
+  const discardDraft = async ({ force = false } = {}) => {
+    if (!force && !state.draftPersisted) {
+      state.draft = null;
+      return true;
+    }
+    const discardVersion = state.editVersion;
+    const promise = enqueueDraftOperation(async () => {
+      await tool("discard_context_draft", {
+          projectDir: state.projectDir,
+          mode: state.mode,
+          ...(state.mode === "extension" ? { extensionPoint: state.extension?.name || "" } : {}),
+        }, "丢弃上下文草稿");
+      if (state.editVersion === discardVersion) {
+        state.draft = null;
+        state.draftPersisted = false;
+      }
+      return true;
+    });
+    try {
+      return await promise;
+    } catch (error) {
+      setStatus(`正式版本已保存，但草稿清理失败：${error?.message || "未知错误"}`, "warning");
+      return false;
+    }
+  };
+  const loadConflictDraft = () => {
+    if (!state.draft?.content || !state.draft.conflict) return;
+    try {
+      validateContent(state.draft.content);
+      applyMarkdown(state.draft.content);
+    } catch (error) {
+      setStatus(error?.message || "冲突草稿无法载入。", "error");
+      return;
+    }
+    const currentRevisionId = state.current?.revisionId || state.current?.id || null;
+    state.draft = { ...state.draft, baseRevisionId: currentRevisionId, conflict: false };
+    state.draftPersisted = true;
+    state.dirty = true;
+    state.editVersion += 1;
+    $("load-draft").hidden = true;
+    renderMeta();
+    syncControls();
+    setStatus("已载入过期草稿；请核对完整正文，确认无误后再提交。", "warning");
+  };
+  const markDirty = (event = {}) => {
     state.editVersion += 1;
     state.dirty = true;
     renderMeta();
+    if (!state.composing && !event.isComposing) scheduleDraftSave();
     setStatus("修改仅保存在当前画布，点击完成编辑后保存。", "warning");
   };
   const ensureCanvasEditor = () => {
@@ -177,6 +305,11 @@
     $("source-tab").setAttribute("aria-selected", view === "source" ? "true" : "false");
   };
   async function flushSave(reviewedContent, reviewedEditVersion) {
+    if (state.draftSaveTimer) {
+      clearTimeout(state.draftSaveTimer);
+      state.draftSaveTimer = null;
+    }
+    await waitForDraftOperations();
     if (!state.dirty) {
       setStatus("当前内容已经是最新版本。");
       return state.current;
@@ -186,6 +319,10 @@
       const content = typeof reviewedContent === "string" ? reviewedContent : currentMarkdown();
       const saveVersion = Number.isInteger(reviewedEditVersion) ? reviewedEditVersion : state.editVersion;
       validateContent(content);
+      const currentRevisionId = state.current?.revisionId || state.current?.id || null;
+      if (state.draft?.conflict || (state.draft?.baseRevisionId && state.draft.baseRevisionId !== currentRevisionId)) {
+        throw new Error("草稿基线对应的权威版本已变化，请重新打开画布核对后再提交。");
+      }
       if (content === state.current?.content) {
         state.dirty = false;
         renderMeta();
@@ -224,6 +361,8 @@
       }
       const revision = rememberRevision(result.revision);
       state.current = { ...revision, revisionId: revision.id, authoritative: true, committedAt: result.committedAt };
+      if (state.draftPersisted) await discardDraft();
+      else state.draft = null;
       state.dirty = state.editVersion !== saveVersion;
       renderHistory();
       renderMeta();
@@ -338,6 +477,10 @@
     if (Number(data.limits?.content) > 0) state.limits.content = Number(data.limits.content);
     editor.maxLength = state.limits.content;
     if (Object.prototype.hasOwnProperty.call(data, "current")) state.current = data.current;
+    if (Object.prototype.hasOwnProperty.call(data, "draft")) {
+      state.draft = data.draft;
+      state.draftPersisted = Boolean(data.draft?.content);
+    }
     if (typeof data.title === "string" && data.title.trim()) {
       $("page-title").textContent = data.title.trim();
       document.title = data.title.trim();
@@ -352,7 +495,9 @@
       state.extension = state.mode === "extension" && data.extension && typeof data.extension === "object" ? { ...data.extension } : null;
       $("history-panel").hidden = state.mode === "extension";
       $("editor-label").textContent = state.mode === "extension" ? `扩展内容：${String(state.extension?.name || "未命名")}` : "Markdown 源码";
-      const sourceText = typeof data.sourceText === "string" ? data.sourceText : null;
+      const sourceText = data.sourceKind === "draft" && data.draft?.content && !data.draft.conflict
+        ? String(data.draft.content)
+        : typeof data.sourceText === "string" ? data.sourceText : null;
       if (sourceText !== null) applyMarkdown(sourceText);
       setView(state.mode === "extension" ? "source" : "canvas");
       const baseline = state.mode === "extension" ? state.extension?.currentContent : state.current?.content;
@@ -363,7 +508,16 @@
     renderHistory();
     renderMeta();
     syncControls();
-    if (projectArrived && state.bridgeState === "ready" && !state.busyAction) setStatus("已连接 Codex，完成编辑时保存。", "warning");
+    if (state.draft?.conflict) {
+      setStatus("检测到基线已过期的未提交草稿，当前画布显示最新权威正文；请核对后再手动载入草稿。", "warning");
+    } else if (state.draft?.content && state.dirty) {
+      setStatus(state.draft.conflict
+        ? "已恢复未提交草稿，但权威版本已变化；提交前请核对并确认。"
+        : "已恢复未提交草稿；完成编辑后才会更新权威版本。", "warning");
+    }
+    else if (projectArrived && state.bridgeState === "ready" && !state.busyAction) setStatus("已连接 Codex，完成编辑时保存。", "warning");
+    $("load-draft").hidden = !(state.draft?.content && state.draft?.conflict);
+    syncControls();
   };
 
   $("canvas-tab").addEventListener("click", () => setView("canvas"));
@@ -375,10 +529,20 @@
       return;
     }
     applyMarkdown(content);
+    state.editVersion += 1;
     state.dirty = false;
+    const hadDraft = state.draftPersisted;
+    if (hadDraft) void discardDraft({ force: true });
+    state.draft = null;
+    state.draftPersisted = false;
+    if (state.draftSaveTimer) {
+      clearTimeout(state.draftSaveTimer);
+      state.draftSaveTimer = null;
+    }
     renderMeta();
     setStatus("已恢复当前权威版本。");
   });
+  $("load-draft").addEventListener("click", loadConflictDraft);
   $("finish-editing").addEventListener("click", requestFinishReview);
   $("review-cancel").addEventListener("click", closeReview);
   $("review-submit").addEventListener("click", () => { void submitReview(); });
@@ -386,8 +550,21 @@
     event.preventDefault();
     closeReview();
   });
+  const compositionStart = () => { state.composing = true; };
+  const compositionEnd = () => {
+    state.composing = false;
+    if (state.dirty) scheduleDraftSave();
+  };
   editor.addEventListener("input", markDirty);
   canvasEditor.addEventListener("input", markDirty);
+  editor.addEventListener("compositionstart", compositionStart);
+  canvasEditor.addEventListener("compositionstart", compositionStart);
+  editor.addEventListener("compositionend", compositionEnd);
+  canvasEditor.addEventListener("compositionend", compositionEnd);
+  window.addEventListener("pagehide", () => { void flushDraft(); });
+  window.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") void flushDraft();
+  });
   window.addEventListener("openai:set_globals", (event) => {
     const globals = event.detail?.globals;
     setBridgeStatus(globals?.codexTextControlBridgeStatus);

@@ -18,6 +18,7 @@ const VISIBLE_REVISIONS_DIR = "visible-revisions";
 const CONTENT_INDEX_DIR = "content-index";
 const CONTENT_INDEX_READY_FILE = "content-index-ready.json";
 const AUTHORITY_ANCHOR_FILE = "authority-anchor.json";
+const DRAFTS_DIR = "drafts";
 const MAX_AUTHORITY_TRANSITIONS = 100_000;
 export const CONTEXT_LIMITS = Object.freeze({
   content: 1_000_000,
@@ -26,6 +27,7 @@ export const CONTEXT_LIMITS = Object.freeze({
   revisionId: 200,
   extensionName: EXTENSION_NAME_LIMIT,
 });
+export const RECENT_CONTEXT_CHARS = 12_000;
 
 function projectPath(projectDir) {
   const directory = String(projectDir ?? "").trim();
@@ -47,6 +49,7 @@ async function ensureStore(projectDir) {
     mkdir(join(root, COMMITTED_REVISIONS_DIR), { recursive: true }),
     mkdir(join(root, VISIBLE_REVISIONS_DIR), { recursive: true }),
     mkdir(join(root, CONTENT_INDEX_DIR), { recursive: true }),
+    mkdir(join(root, DRAFTS_DIR), { recursive: true }),
   ]);
   return root;
 }
@@ -107,6 +110,39 @@ function visibleRevisionPath(root, revisionId) {
 
 function contentIndexPath(root, contentHash) {
   return join(root, CONTENT_INDEX_DIR, `${contentHash}.json`);
+}
+
+function draftPath(root, mode, extensionPoint = "") {
+  const safeMode = mode === "extension" ? "extension" : "full";
+  const key = createHash("sha256").update(`${safeMode}\0${extensionPoint}`).digest("hex");
+  return join(root, DRAFTS_DIR, `${key}.json`);
+}
+
+function draftMode(value) {
+  if (value === undefined || value === null || value === "full") return "full";
+  if (value === "extension") return "extension";
+  throw new Error("草稿模式无效。");
+}
+
+function normalizeDraft(value) {
+  if (value === null) return null;
+  if (!value || typeof value !== "object") throw new Error("草稿记录损坏，已拒绝读取。");
+  const content = requiredText(value.content, "草稿正文", CONTEXT_LIMITS.content);
+  const mode = value.mode === "extension" ? "extension" : value.mode === "full" ? "full" : null;
+  if (!mode) throw new Error("草稿模式无效，已拒绝读取。");
+  const extensionPoint = optionalText(value.extensionPoint, "扩展点名称", CONTEXT_LIMITS.extensionName);
+  if (mode === "extension" && !extensionPoint.trim()) throw new Error("扩展点草稿缺少名称，已拒绝读取。");
+  const baseRevisionId = value.baseRevisionId === null || value.baseRevisionId === undefined
+    ? null
+    : requiredText(value.baseRevisionId, "草稿基准版本编号", CONTEXT_LIMITS.revisionId);
+  return {
+    id: requiredText(value.id, "草稿编号", CONTEXT_LIMITS.revisionId),
+    mode,
+    extensionPoint,
+    baseRevisionId,
+    content,
+    updatedAt: optionalText(value.updatedAt, "草稿更新时间", 100),
+  };
 }
 
 function revisionFilePath(root, revisionId) {
@@ -405,6 +441,52 @@ export async function saveContextRevision(options = {}) {
   return saveContextRevisionInternal(options);
 }
 
+export async function saveContextDraft({
+  projectDir,
+  content,
+  baseRevisionId = null,
+  mode = "full",
+  extensionPoint = "",
+} = {}) {
+  const text = requiredText(content, "草稿正文", CONTEXT_LIMITS.content);
+  const safeMode = draftMode(mode);
+  const safePoint = optionalText(extensionPoint, "扩展点名称", CONTEXT_LIMITS.extensionName);
+  if (safeMode === "extension" && !safePoint.trim()) throw new Error("扩展点草稿必须提供名称。");
+  const safeBase = baseRevisionId === null || baseRevisionId === undefined
+    ? null
+    : requiredText(baseRevisionId, "草稿基准版本编号", CONTEXT_LIMITS.revisionId);
+  const root = await ensureStore(projectDir);
+  const draft = {
+    id: `draft-sha256-${createHash("sha256").update(text).digest("hex")}`,
+    mode: safeMode,
+    extensionPoint: safePoint,
+    baseRevisionId: safeBase,
+    content: text,
+    updatedAt: new Date().toISOString(),
+  };
+  await writeJsonAtomic(draftPath(root, safeMode, safePoint), draft);
+  return draft;
+}
+
+export async function getContextDraft({ projectDir, mode = "full", extensionPoint = "" } = {}) {
+  const safeMode = draftMode(mode);
+  const safePoint = optionalText(extensionPoint, "扩展点名称", CONTEXT_LIMITS.extensionName);
+  if (safeMode === "extension" && !safePoint.trim()) throw new Error("扩展点草稿必须提供名称。");
+  const root = await ensureStore(projectDir);
+  return normalizeDraft(await readJson(draftPath(root, safeMode, safePoint)));
+}
+
+export async function discardContextDraft({ projectDir, mode = "full", extensionPoint = "" } = {}) {
+  const safeMode = draftMode(mode);
+  const safePoint = optionalText(extensionPoint, "扩展点名称", CONTEXT_LIMITS.extensionName);
+  if (safeMode === "extension" && !safePoint.trim()) throw new Error("扩展点草稿必须提供名称。");
+  const root = await ensureStore(projectDir);
+  await unlink(draftPath(root, safeMode, safePoint)).catch((error) => {
+    if (error?.code !== "ENOENT") throw error;
+  });
+  return { discarded: true, mode: safeMode, extensionPoint: safePoint };
+}
+
 export async function saveContextExtensionRevision({
   projectDir,
   baseRevisionId,
@@ -577,6 +659,25 @@ export async function getAuthoritativeContext({ projectDir } = {}) {
   await markRevisionVisible(state.root, state.revisionId);
   const revision = await getContextRevision({ projectDir, revisionId: state.revisionId });
   return { ...revision, revisionId: state.revisionId, authoritative: true, committedAt: state.committedAt };
+}
+
+export async function getRecentAuthoritativeContext({ projectDir } = {}) {
+  const current = await getAuthoritativeContext({ projectDir });
+  if (!current) return null;
+  const fullContent = String(current.content ?? "");
+  if (fullContent.length <= RECENT_CONTEXT_CHARS) {
+    return { ...current, truncated: false, fullContentLength: fullContent.length, recentOnly: true };
+  }
+  const start = fullContent.length - RECENT_CONTEXT_CHARS;
+  const lineStart = fullContent.indexOf("\n", start);
+  const recent = fullContent.slice(lineStart >= 0 ? lineStart + 1 : start);
+  return {
+    ...current,
+    content: recent,
+    truncated: true,
+    fullContentLength: fullContent.length,
+    recentOnly: true,
+  };
 }
 
 export function contextStoreDescription(projectDir) {

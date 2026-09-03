@@ -13,7 +13,7 @@ export function createWidgetBridge({
   CustomEventClass,
   connectTimeoutMs = 15_000,
   requestTimeoutMs = 30_000,
-  appVersion = "0.5.9",
+  appVersion = "0.5.10",
 } = {}) {
   const eventClass = CustomEventClass || target?.CustomEvent;
   const publish = (globals) => {
@@ -115,7 +115,7 @@ export function createWidgetBridge({
 export async function registerTextControlWidget(server, { uri, html }) {
   const metadata = {
     ui: { prefersBorder: true, csp: { connectDomains: [], resourceDomains: [], frameDomains: [] } },
-    "openai/widgetDescription": "在一个连续正文编辑器中直接修改 Codex 权威 Markdown，完成编辑时保存版本，或只修改命名 AI 扩展点。",
+    "openai/widgetDescription": "Edit Codex authoritative Markdown in one continuous editor, save an immutable revision when finished, or update only a named AI extension point.",
     "openai/widgetPrefersBorder": true,
     "openai/widgetCSP": { connect_domains: [], resource_domains: [], frame_domains: [] },
   };
@@ -123,8 +123,8 @@ export async function registerTextControlWidget(server, { uri, html }) {
   // 后续 resources/read（资源读取）就不会再次依赖已经可能不存在的安装文件。
   const widgetHtml = injectBridge(await html());
   registerAppResource(server, "codex-text-control-widget", uri, {
-    title: "Codex 上下文画布",
-    description: "在 Codex 内通过连续正文编辑器修改上下文 Markdown 或指定 AI 扩展点，并在完成编辑时保存权威版本。",
+    title: "Codex context canvas",
+    description: "Edit context Markdown in Codex through one continuous editor or a named AI extension point, then save an authoritative revision when finished.",
     _meta: metadata,
   }, async () => ({
     contents: [{ uri, mimeType: RESOURCE_MIME_TYPE, text: widgetHtml, _meta: metadata }],

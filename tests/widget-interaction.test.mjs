@@ -78,11 +78,11 @@ class FakeDocument {
     this.elements = new Map();
     const ids = [
       "page-title", "status", "editor-label", "editor", "canvas-editor", "canvas", "canvas-view", "source-view",
-      "canvas-tab", "source-tab", "reset", "finish-editing",
+      "canvas-tab", "source-tab", "reset", "finish-editing", "load-draft",
       "review-dialog", "review-content", "review-status", "review-cancel", "review-submit",
       "meta", "history-panel", "history",
     ];
-    const tags = { editor: "textarea", "canvas-editor": "textarea", "review-dialog": "dialog", "review-content": "pre", "review-cancel": "button", "review-submit": "button" };
+  const tags = { editor: "textarea", "canvas-editor": "textarea", "review-dialog": "dialog", "review-content": "pre", "review-cancel": "button", "review-submit": "button", "load-draft": "button" };
     for (const id of ids) this.elements.set(id, new FakeElement(tags[id] || "div", id));
   }
   getElementById(id) { return this.elements.get(id) || null; }
@@ -102,12 +102,12 @@ class FakeWindow {
   }
 }
 
-async function createHarness({ toolOutput = {}, bridgeState = "ready", callServerTool, sendFollowUpMessage } = {}) {
+async function createHarness({ toolOutput = {}, bridgeState = "ready", callServerTool, sendFollowUpMessage, requestTimeoutMs = 15 } = {}) {
   const document = new FakeDocument();
   const window = new FakeWindow();
   const calls = [];
   window.openai = { toolOutput, codexTextControlBridgeStatus: { state: bridgeState } };
-  window.__CTC_REQUEST_TIMEOUT_MS__ = 15;
+  window.__CTC_REQUEST_TIMEOUT_MS__ = requestTimeoutMs;
   window.codexTextControlMcp = {
     callServerTool: async (request) => {
       calls.push(request);
@@ -141,6 +141,7 @@ test("全文编辑器只保留正文编辑与闭环操作，不提供额外结�
   assert.match(html, /id="canvas-tab"/);
   assert.match(html, /id="source-tab"/);
   assert.match(html, /id="finish-editing"/);
+  assert.match(html, /id="load-draft"/);
   assert.match(html, /id="review-dialog"/);
   assert.match(html, /id="review-content"/);
   assert.match(html, /id="review-cancel"/);
@@ -485,6 +486,162 @@ test("同一 Widget 的新渲染刷新正文，重复宿主事件不覆盖用户
   assert.equal(harness.element("editor").value, "新请求后的用户编辑");
 });
 
+test("输入停顿会保存草稿，下一次打开可恢复且不提交正式版本", async () => {
+  const calls = [];
+  const current = { id: "rev-current", revisionId: "rev-current", content: "原始权威正文" };
+  const harness = await createHarness({
+    toolOutput: {
+      mode: "full",
+      projectDir: "/workspace/demo",
+      sourceText: current.content,
+      revisions: [current],
+      current,
+    },
+    callServerTool: async (request) => {
+      calls.push(request);
+      return { structuredContent: { draft: { content: request.arguments.content } } };
+    },
+  });
+
+  await harness.element("source-tab").emit("click");
+  harness.element("editor").value = "切换对话前的未提交修改";
+  await harness.element("editor").emit("input");
+  await new Promise((resolve) => setTimeout(resolve, 450));
+
+  assert.deepEqual(calls.map((request) => request.name), ["save_context_draft"]);
+  assert.equal(calls[0].arguments.baseRevisionId, "rev-current");
+  assert.equal(calls[0].arguments.content, "切换对话前的未提交修改");
+
+  const restored = await createHarness({
+    toolOutput: {
+      mode: "full",
+      projectDir: "/workspace/demo",
+      sourceText: "切换对话前的未提交修改",
+      draft: { content: "切换对话前的未提交修改", baseRevisionId: "rev-current", conflict: false },
+      revisions: [current],
+      current,
+    },
+  });
+  assert.equal(restored.element("editor").value, "切换对话前的未提交修改");
+  assert.match(restored.element("status").textContent, /草稿|未提交/);
+});
+
+test("恢复的草稿基线过期时阻止静默覆盖新的权威版本", async () => {
+  const current = { id: "rev-new", revisionId: "rev-new", content: "已经更新的权威正文" };
+  const harness = await createHarness({
+    toolOutput: {
+      mode: "full",
+      projectDir: "/workspace/demo",
+      sourceText: "旧版本上的未提交修改",
+      draft: { content: "旧版本上的未提交修改", baseRevisionId: "rev-old", conflict: true },
+      revisions: [current],
+      current,
+    },
+    callServerTool: async () => { throw new Error("冲突草稿不应调用正式保存"); },
+  });
+
+  await harness.element("finish-editing").emit("click");
+  await harness.element("review-submit").emit("click");
+  await new Promise((resolve) => setTimeout(resolve, 20));
+
+  assert.equal(harness.calls.length, 0);
+  assert.match(harness.element("status").textContent, /权威版本|冲突|重新打开/);
+});
+
+test("过期草稿可以显式载入当前基线，检查后再提交", async () => {
+  const current = { id: "rev-new", revisionId: "rev-new", content: "已经更新的权威正文" };
+  const draftContent = "旧基线上的未提交修改";
+  const calls = [];
+  const harness = await createHarness({
+    toolOutput: {
+      mode: "full",
+      projectDir: "/workspace/demo",
+      sourceText: current.content,
+      draft: { content: draftContent, baseRevisionId: "rev-old", conflict: true },
+      revisions: [current],
+      current,
+    },
+    callServerTool: async (request) => {
+      calls.push(request);
+      if (request.name === "update_authoritative_context") {
+        return { structuredContent: { revision: { id: "rev-merged", content: request.arguments.content }, committedAt: "2026-09-02T00:00:00.000Z" } };
+      }
+      return { structuredContent: {} };
+    },
+  });
+
+  assert.equal(harness.element("load-draft").hidden, false);
+  await harness.element("load-draft").emit("click");
+  assert.equal(harness.element("load-draft").hidden, true);
+  assert.equal(harness.element("editor").value, draftContent);
+  assert.match(harness.element("status").textContent, /核对|载入/);
+
+  await finishThroughReview(harness);
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  assert.equal(calls[0].name, "update_authoritative_context");
+  assert.equal(calls[0].arguments.expectedCurrentRevisionId, "rev-new");
+  assert.equal(calls[0].arguments.content, draftContent);
+  assert.match(harness.element("meta").textContent, /rev-merged/);
+});
+
+test("输入法组合态不会自动保存，组合结束后才保存最终草稿", async () => {
+  const calls = [];
+  const harness = await createHarness({
+    toolOutput: { mode: "full", projectDir: "/workspace/demo", sourceText: "原始正文", revisions: [], current: null },
+    callServerTool: async (request) => {
+      calls.push(request);
+      return { structuredContent: { draft: { content: request.arguments.content } } };
+    },
+  });
+  await harness.element("source-tab").emit("click");
+  await harness.element("editor").emit("compositionstart");
+  harness.element("editor").value = "拼音中间态";
+  await harness.element("editor").emit("input", { isComposing: true });
+  await new Promise((resolve) => setTimeout(resolve, 400));
+  assert.equal(calls.length, 0);
+  await harness.element("editor").emit("compositionend");
+  await new Promise((resolve) => setTimeout(resolve, 400));
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].name, "save_context_draft");
+});
+
+test("切换对话触发 pagehide 时会立即尽力保存当前草稿", async () => {
+  const calls = [];
+  const harness = await createHarness({
+    toolOutput: { mode: "full", projectDir: "/workspace/demo", sourceText: "原始正文", revisions: [], current: null },
+    callServerTool: async (request) => {
+      calls.push(request);
+      return { structuredContent: { draft: { content: request.arguments.content } } };
+    },
+  });
+  await harness.element("source-tab").emit("click");
+  harness.element("editor").value = "切换对话前的草稿";
+  await harness.element("editor").emit("input");
+  harness.window.dispatchEvent({ type: "pagehide" });
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].name, "save_context_draft");
+  assert.equal(calls[0].arguments.content, "切换对话前的草稿");
+});
+
+test("本轮候选正文优先于宿主复用时带回的旧草稿", async () => {
+  const current = { id: "rev-current", revisionId: "rev-current", content: "项目权威正文" };
+  const harness = await createHarness({
+    toolOutput: {
+      mode: "full",
+      renderId: "render-candidate",
+      projectDir: "/workspace/demo",
+      sourceText: "本轮整理出的候选正文",
+      sourceKind: "candidate",
+      draft: { content: "上一轮对话的旧草稿", baseRevisionId: "rev-current", conflict: false },
+      revisions: [current],
+      current,
+    },
+  });
+
+  assert.equal(harness.element("canvas-editor").value, "本轮整理出的候选正文");
+});
+
 test("完成更新不发送修改说明字段，未改内容不会调用工具", async () => {
   const current = { id: "rev-current", revisionId: "rev-current", content: "当前正文" };
   const harness = await createHarness({
@@ -622,4 +779,156 @@ test("每次打开画布都会返回新的渲染编号", async () => {
   } finally {
     await client.close();
   }
+});
+
+test("draft persistence serializes saves and preserves the latest edit", async () => {
+  const calls = [];
+  const resolvers = [];
+  const harness = await createHarness({
+    toolOutput: { mode: "full", projectDir: "/workspace/demo", sourceText: "original", revisions: [], current: null },
+    requestTimeoutMs: 1_000,
+    callServerTool: async (request) => {
+      calls.push(request);
+      return new Promise((resolve) => resolvers.push(resolve));
+    },
+  });
+
+  await harness.element("source-tab").emit("click");
+  harness.element("editor").value = "first edit";
+  await harness.element("editor").emit("input");
+  await new Promise((resolve) => setTimeout(resolve, 370));
+  assert.equal(calls.length, 1);
+
+  harness.element("editor").value = "second edit";
+  await harness.element("editor").emit("input");
+  await new Promise((resolve) => setTimeout(resolve, 370));
+  assert.equal(calls.length, 1);
+
+  resolvers.shift()({ structuredContent: { draft: { content: "first edit" } } });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  assert.equal(calls.length, 2);
+  assert.equal(calls[1].arguments.content, "second edit");
+
+  resolvers.shift()({ structuredContent: { draft: { content: "second edit" } } });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+});
+
+test("pagehide during IME composition does not persist an intermediate draft", async () => {
+  const calls = [];
+  const harness = await createHarness({
+    toolOutput: { mode: "full", projectDir: "/workspace/demo", sourceText: "original", revisions: [], current: null },
+    callServerTool: async (request) => {
+      calls.push(request);
+      return { structuredContent: { draft: { content: request.arguments.content } } };
+    },
+  });
+
+  await harness.element("source-tab").emit("click");
+  await harness.element("editor").emit("compositionstart");
+  harness.element("editor").value = "composing";
+  await harness.element("editor").emit("input", { isComposing: true });
+  harness.window.dispatchEvent({ type: "pagehide" });
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  assert.equal(calls.length, 0);
+
+  await harness.element("editor").emit("compositionend");
+  await new Promise((resolve) => setTimeout(resolve, 400));
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].arguments.content, "composing");
+});
+
+test("resetting to the authoritative version discards the persisted draft", async () => {
+  const calls = [];
+  const current = { id: "rev-current", revisionId: "rev-current", content: "authoritative" };
+  const harness = await createHarness({
+    toolOutput: {
+      mode: "full",
+      projectDir: "/workspace/demo",
+      sourceText: "draft content",
+      draft: { content: "draft content", baseRevisionId: "rev-current", conflict: false },
+      revisions: [current],
+      current,
+    },
+    callServerTool: async (request) => {
+      calls.push(request);
+      return { structuredContent: {} };
+    },
+  });
+
+  await harness.element("reset").emit("click");
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  assert.deepEqual(calls.map((request) => request.name), ["discard_context_draft"]);
+  assert.equal(calls[0].arguments.projectDir, "/workspace/demo");
+  assert.equal(harness.element("canvas-editor").value, "authoritative");
+});
+
+test("a new edit waits for reset cleanup before saving a replacement draft", async () => {
+  const calls = [];
+  let resolveDiscard;
+  const current = { id: "rev-current", revisionId: "rev-current", content: "authoritative" };
+  const harness = await createHarness({
+    requestTimeoutMs: 1_000,
+    toolOutput: {
+      mode: "full",
+      projectDir: "/workspace/demo",
+      sourceText: "draft content",
+      draft: { content: "draft content", baseRevisionId: "rev-current", conflict: false },
+      revisions: [current],
+      current,
+    },
+    callServerTool: async (request) => {
+      calls.push(request);
+      if (request.name === "discard_context_draft") {
+        return new Promise((resolve) => { resolveDiscard = resolve; });
+      }
+      return { structuredContent: { draft: { content: request.arguments.content } } };
+    },
+  });
+
+  await harness.element("reset").emit("click");
+  harness.element("canvas-editor").value = "new edit after reset";
+  await harness.element("canvas-editor").emit("input");
+  await new Promise((resolve) => setTimeout(resolve, 370));
+  assert.deepEqual(calls.map((request) => request.name), ["discard_context_draft"]);
+
+  resolveDiscard({ structuredContent: {} });
+  await new Promise((resolve) => setTimeout(resolve, 400));
+  assert.deepEqual(calls.map((request) => request.name), ["discard_context_draft", "save_context_draft"]);
+  assert.equal(calls[1].arguments.content, "new edit after reset");
+});
+
+test("formal submission waits for reset cleanup before updating authority", async () => {
+  const calls = [];
+  let resolveDiscard;
+  const current = { id: "rev-current", revisionId: "rev-current", content: "authoritative" };
+  const harness = await createHarness({
+    requestTimeoutMs: 1_000,
+    toolOutput: {
+      mode: "full",
+      projectDir: "/workspace/demo",
+      sourceText: "draft content",
+      draft: { content: "draft content", baseRevisionId: "rev-current", conflict: false },
+      revisions: [current],
+      current,
+    },
+    callServerTool: async (request) => {
+      calls.push(request);
+      if (request.name === "discard_context_draft") {
+        return new Promise((resolve) => { resolveDiscard = resolve; });
+      }
+      return { structuredContent: { revision: { id: "rev-submitted", content: request.arguments.content } } };
+    },
+  });
+
+  await harness.element("reset").emit("click");
+  harness.element("canvas-editor").value = "new edit after reset";
+  await harness.element("canvas-editor").emit("input");
+  await finishThroughReview(harness);
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  assert.deepEqual(calls.map((request) => request.name), ["discard_context_draft"]);
+
+  resolveDiscard({ structuredContent: {} });
+  await new Promise((resolve) => setTimeout(resolve, 40));
+  assert.deepEqual(calls.map((request) => request.name), ["discard_context_draft", "update_authoritative_context"]);
+  assert.equal(calls[1].arguments.content, "new edit after reset");
 });
