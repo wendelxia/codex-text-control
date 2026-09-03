@@ -2,6 +2,51 @@
 
 本文件记录用户能感知的变化、修复、已知限制和回退方法。版本号遵循 Semantic Versioning（语义化版本）：`主版本.次版本.修订版本`。
 
+## [0.5.11] - 2026-09-03
+
+### Fixed
+
+- Keep title, body, and render identity atomic when a reused Codex host delivers a partial widget payload. A title-only payload no longer advances the canvas to a mixed state, and the matching body can still arrive under the same render ID.
+- Reject custom-title renders that do not include the matching candidate body, so a new answer title cannot be displayed above older authoritative text or a recovered draft.
+
+### Verification
+
+- Focused widget and MCP contract tests pass: `50/50`.
+- The regression tests cover a partial new render followed by its complete body payload, and a custom-title render that omits the matching candidate body.
+
+### Known limitation
+
+- This patch fixes the verified client-side mixed-payload path. It does not provide a cross-platform real-host matrix or an external authoritative usability benchmark.
+
+## [0.5.10] - 2026-09-02
+
+### Changed
+
+- Persist the in-progress canvas as a project-local draft after an editing pause, on page hide, and when switching conversations. Drafts remain separate from immutable revision history and can be restored in a later conversation.
+- Make `get_authoritative_context` return the most recent 12,000 characters by default, while keeping the complete authoritative Markdown inside the project store and the canvas.
+- Treat a draft based on an older authoritative revision as an explicit conflict. The canvas keeps the current authoritative text visible, and the user must choose to load and review the older draft before submitting it against the current base.
+
+### Fixed
+
+- Serialize overlapping draft writes so an older response cannot overwrite a newer edit.
+- Keep Chinese IME composition text out of draft persistence, including when the page is hidden during composition.
+- Ensure restoring the current authoritative version removes the persisted draft, while a new edit made during cleanup remains intact.
+- Keep the existing confirmation boundary: only the user's final confirmation creates an immutable revision and advances the authoritative pointer.
+
+### Verification
+
+- `npm test`: `112/112` automated tests passed, including storage, MCP contracts, continuous-canvas interaction, draft recovery, conflict handling, IME composition, page-hide persistence, reset cleanup, and concurrent draft-write regressions.
+- `npm run check` and `npm run probe:mcp`: passed.
+- `npm run audit:prod` and `npm run audit:signatures`: required supply-chain checks pass after updating the vulnerable transitive `qs` dependency to `6.16.0`; `96` package signatures and `11` attestations remain verified.
+
+### Known limitation
+
+- The user has completed the `0.5.10` reinstall-and-click verification in the real Codex desktop host. This repository records that as a user-reported result without pretending to contain host screenshots or logs; the build remains a public pre-release because there is no cross-platform host matrix or external authoritative benchmark.
+
+### Rollback
+
+Reinstall the public `v0.5.9` pre-release to return to the previous canvas behavior. Keep the project `.codex-text-control/` directory; it contains user revisions and drafts and must not be deleted during rollback.
+
 ## [0.5.9] - 2026-09-02
 
 ### Changed

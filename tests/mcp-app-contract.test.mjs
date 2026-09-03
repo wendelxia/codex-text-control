@@ -30,12 +30,12 @@ test("发布版本在包、锁文件、插件、MCP、README 和变更记录中�
   assert.match(serverSource, new RegExp(`version: ["']${version.replaceAll(".", "\\.")}["']`));
   assert.match(widgetSource, new RegExp(`appVersion = ["']${version.replaceAll(".", "\\.")}["']`));
   assert.match(readme, new RegExp(`version-${version.replaceAll(".", "\\.")}`));
-  assert.match(readme, new RegExp("当前状态：`" + version.replaceAll(".", "\\.") + "`"));
-  assert.match(readme, /连续正文编辑/);
+  assert.match(readme, new RegExp(`${version.replaceAll(".", "\\.")} public pre-release`));
+  assert.match(readme, /One continuous editor/);
   assert.match(changelog, new RegExp(`^## \\[${version.replaceAll(".", "\\.")}\\] - \\d{4}-\\d{2}-\\d{2}$`, "m"));
-  assert.match(manifest.description, /连续 Markdown/);
-  assert.match(serverSource, /连续 Markdown 正文/);
-  assert.match(widgetSource, /连续正文编辑器/);
+  assert.match(manifest.description, /single continuous Markdown body/i);
+  assert.match(serverSource, /single continuous Markdown body/i);
+  assert.match(widgetSource, /continuous editor/i);
 });
 
 // 这项测试检查 MCP Apps（MCP 应用）协议边界，而不是只检查后端函数能不能单独运行。
@@ -51,7 +51,7 @@ test("保存和提交工具明确允许上下文编辑器调用", async () => {
     const render = tools.find((candidate) => candidate.name === "render_text_control_widget");
     assert.ok(render, "缺少打开编辑器工具。\n");
     assert.deepEqual(render._meta?.ui?.visibility, ["model"], "打开编辑器工具应只由模型调用。\n");
-    for (const name of ["save_text_revision", "save_context_extension_revision", "commit_authoritative_context", "update_authoritative_context"]) {
+    for (const name of ["save_context_draft", "discard_context_draft", "save_text_revision", "save_context_extension_revision", "commit_authoritative_context", "update_authoritative_context"]) {
       const tool = tools.find((candidate) => candidate.name === name);
       assert.ok(tool, `缺少工具：${name}`);
       assert.equal(tool._meta?.ui?.resourceUri, WIDGET_URI);
@@ -121,6 +121,107 @@ test("已有权威正文时可以省略候选正文直接打开画布", async ()
     });
     assert.notEqual(rendered.isError, true);
     assert.equal(rendered.structuredContent?.sourceText, content);
+  } finally {
+    await client.close();
+    await rm(projectDir, { recursive: true, force: true });
+  }
+});
+
+test("自定义标题必须和候选正文一起提供，避免新标题串到旧权威正文", async () => {
+  const projectDir = await mkdtemp(join(tmpdir(), "codex-text-control-title-body-render-"));
+  const transport = new StdioClientTransport({ command: process.execPath, args: ["./scripts/start-mcp.mjs"] });
+  const client = new Client({ name: "codex-text-control-title-body-render-test", version: "0.5.11" });
+  await client.connect(transport);
+
+  try {
+    await client.callTool({
+      name: "update_authoritative_context",
+      arguments: { projectDir, content: "旧权威正文", expectedCurrentRevisionId: null },
+    });
+    const rendered = await client.callTool({
+      name: "render_text_control_widget",
+      arguments: { projectDir, title: "新回答标题" },
+    });
+    assert.equal(rendered.isError, true);
+    assert.match(rendered.content?.[0]?.text || "", /sourceText|custom title|candidate body/i);
+  } finally {
+    await client.close();
+    await rm(projectDir, { recursive: true, force: true });
+  }
+});
+
+test("明确提供本轮候选正文时，画布不会被项目里的旧权威正文串入", async () => {
+  const projectDir = await mkdtemp(join(tmpdir(), "codex-text-control-stale-candidate-"));
+  const transport = new StdioClientTransport({ command: process.execPath, args: ["./scripts/start-mcp.mjs"] });
+  const client = new Client({ name: "codex-text-control-stale-candidate-test", version: "0.5.9" });
+  await client.connect(transport);
+
+  try {
+    const current = "磁盘上的新权威正文";
+    await client.callTool({
+      name: "update_authoritative_context",
+      arguments: { projectDir, content: current, expectedCurrentRevisionId: null },
+    });
+    const rendered = await client.callTool({
+      name: "render_text_control_widget",
+      arguments: { projectDir, sourceText: "对话里残留的旧正文" },
+    });
+    assert.equal(rendered.structuredContent?.sourceText, "对话里残留的旧正文");
+    assert.equal(rendered.structuredContent?.sourceKind, "candidate");
+    assert.equal(rendered.structuredContent?.draft, null);
+  } finally {
+    await client.close();
+    await rm(projectDir, { recursive: true, force: true });
+  }
+});
+
+test("权威读取工具只向模型返回最近文本", async () => {
+  const projectDir = await mkdtemp(join(tmpdir(), "codex-text-control-recent-context-"));
+  const transport = new StdioClientTransport({ command: process.execPath, args: ["./scripts/start-mcp.mjs"] });
+  const client = new Client({ name: "codex-text-control-recent-context-test", version: "0.5.9" });
+  await client.connect(transport);
+
+  try {
+    const content = `${"历史段落\n".repeat(4_000)}末尾锚点`;
+    await client.callTool({
+      name: "update_authoritative_context",
+      arguments: { projectDir, content, expectedCurrentRevisionId: null },
+    });
+    const result = await client.callTool({ name: "get_authoritative_context", arguments: { projectDir } });
+    assert.equal(result.structuredContent?.current?.truncated, true);
+    assert.equal(result.structuredContent?.current?.content.endsWith("末尾锚点"), true);
+    assert.equal(result.structuredContent?.current?.content.length < content.length, true);
+  } finally {
+    await client.close();
+    await rm(projectDir, { recursive: true, force: true });
+  }
+});
+
+test("冲突草稿不会自动覆盖新权威正文，但会随画布返回供用户主动载入", async () => {
+  const projectDir = await mkdtemp(join(tmpdir(), "codex-text-control-conflict-draft-"));
+  const transport = new StdioClientTransport({ command: process.execPath, args: ["./scripts/start-mcp.mjs"] });
+  const client = new Client({ name: "codex-text-control-conflict-draft-test", version: "0.5.9" });
+  await client.connect(transport);
+
+  try {
+    const first = await client.callTool({
+      name: "update_authoritative_context",
+      arguments: { projectDir, content: "第一版权威正文", expectedCurrentRevisionId: null },
+    });
+    const baseId = first.structuredContent?.revision?.id;
+    await client.callTool({
+      name: "save_context_draft",
+      arguments: { projectDir, content: "旧基线上的草稿", baseRevisionId: baseId, mode: "full" },
+    });
+    await client.callTool({
+      name: "update_authoritative_context",
+      arguments: { projectDir, content: "第二版权威正文", expectedCurrentRevisionId: baseId },
+    });
+
+    const rendered = await client.callTool({ name: "render_text_control_widget", arguments: { projectDir } });
+    assert.equal(rendered.structuredContent?.sourceText, "第二版权威正文");
+    assert.equal(rendered.structuredContent?.draft?.content, "旧基线上的草稿");
+    assert.equal(rendered.structuredContent?.draft?.conflict, true);
   } finally {
     await client.close();
     await rm(projectDir, { recursive: true, force: true });

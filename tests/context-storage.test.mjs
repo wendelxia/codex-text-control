@@ -10,10 +10,14 @@ import { join } from "node:path";
 import {
   commitAuthoritativeContext,
   getAuthoritativeContext,
+  getRecentAuthoritativeContext,
   getCurrentContext,
+  getContextDraft,
   listContextRevisions,
+  saveContextDraft,
   saveContextExtensionRevision,
   saveContextRevision,
+  discardContextDraft,
   updateAuthoritativeContext,
 } from "../mcp/context-storage.mjs";
 
@@ -582,4 +586,57 @@ test("存在旧版 write.lock 时，多进程同基准更新仍最多一个成�
     }
     assert.equal((await listContextRevisions({ projectDir })).length, 2);
   }
+});
+
+test("草稿独立持久化并可恢复，但不会改变权威版本或正式历史", async () => {
+  const projectDir = await projectFixture();
+  const committed = await updateAuthoritativeContext({
+    projectDir,
+    content: "权威正文",
+    expectedCurrentRevisionId: null,
+  });
+
+  const draft = await saveContextDraft({
+    projectDir,
+    content: "切换对话前的未提交修改",
+    baseRevisionId: committed.revision.id,
+    mode: "full",
+  });
+
+  assert.equal(draft.content, "切换对话前的未提交修改");
+  assert.equal((await getAuthoritativeContext({ projectDir })).content, "权威正文");
+  assert.equal((await listContextRevisions({ projectDir })).length, 1);
+
+  const restored = await getContextDraft({ projectDir, mode: "full" });
+  assert.equal(restored.content, draft.content);
+  assert.equal(restored.baseRevisionId, committed.revision.id);
+
+  await discardContextDraft({ projectDir, mode: "full" });
+  assert.equal(await getContextDraft({ projectDir, mode: "full" }), null);
+});
+
+test("模型读取接口只返回最近正文，完整正文仍由内部权威读取保留", async () => {
+  const projectDir = await projectFixture();
+  const content = `${"前置内容\n".repeat(4_000)}末尾锚点`;
+  await updateAuthoritativeContext({ projectDir, content, expectedCurrentRevisionId: null });
+
+  const recent = await getRecentAuthoritativeContext({ projectDir });
+  assert.equal(recent.revisionId.startsWith("rev-"), true);
+  assert.equal(recent.truncated, true);
+  assert.equal(recent.content.endsWith("末尾锚点"), true);
+  assert.equal(recent.content.includes("前置内容"), true);
+  assert.equal((await getAuthoritativeContext({ projectDir })).content, content);
+});
+
+test("损坏的草稿记录不会被当作编辑内容读取", async () => {
+  const projectDir = await projectFixture();
+  const root = join(projectDir, ".codex-text-control");
+  const key = createHash("sha256").update("full\0").digest("hex");
+  await mkdir(join(root, "drafts"), { recursive: true });
+  await writeFile(join(root, "drafts", `${key}.json`), JSON.stringify({ content: "缺少必要字段" }), "utf8");
+
+  await assert.rejects(
+    () => getContextDraft({ projectDir, mode: "full" }),
+    /草稿记录损坏|草稿模式无效/,
+  );
 });

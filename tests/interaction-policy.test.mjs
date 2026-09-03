@@ -65,14 +65,14 @@ test("文件交付、简短对话和过程消息不自动打开画布", async ()
   assert.match(skill, /工作过程中的进度消息不得触发/);
 });
 
-test("结论稿打开、编辑和提交前检查都不保存，只有确认提交才更新权威版本", async () => {
+test("结论稿编辑会持久化草稿，但只有确认提交才更新权威版本", async () => {
   const skill = await readFile(join(process.cwd(), "skills", "codex-text-control", "SKILL.md"), "utf8");
   assert.match(skill, /连续的多行正文编辑器/);
   assert.match(skill, /不拆成文字块、单元格或行号视觉结构/);
-  assert.match(skill, /初次打开、编辑过程和提交前检查都不保存/);
+  assert.match(skill, /编辑停顿会自动保存可恢复草稿/);
   assert.match(skill, /弹出完整待提交原文供最后检查/);
   assert.match(skill, /点击“确认提交”后.*更新权威版本/);
-  assert.match(skill, /点击“返回修改”会保留当前草稿/);
+  assert.match(skill, /点击“返回修改”或切换对话会保留草稿/);
   assert.match(skill, /输入法中间态/);
 });
 
