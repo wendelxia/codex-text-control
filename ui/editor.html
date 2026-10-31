@@ -3,143 +3,76 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Codex 上下文画布</title>
+  <title>可编辑回复</title>
   <style>
     :root {
       color-scheme: light dark;
-      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-      --bg: #f4f6f8;
-      --surface: #ffffff;
-      --surface-subtle: #eef2f5;
-      --text: #17202a;
-      --muted: #5d6874;
-      --border: #c8d0d8;
-      --focus: #2374c6;
-      --accent: #216e4e;
-      --on-accent: #ffffff;
-      --danger: #b42318;
-      --warning: #8a4b08;
+      --text: var(--color-text-primary, #262626);
+      --muted: var(--color-text-secondary, #737373);
+      --line: var(--color-border-secondary, #dedede);
+      --soft: var(--color-background-secondary, #f5f5f5);
+      --action: var(--color-background-inverse, #262626);
+      --on-action: var(--color-text-inverse, #fff);
+      --focus: var(--color-ring-primary, #64748b);
+      --error: var(--color-text-danger, #b42318);
+      font-family: var(--font-sans, ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", sans-serif);
+      font-size: var(--font-text-md-size, 16px);
+    }
+    :root[data-theme="dark"] { color-scheme: dark; --text: var(--color-text-primary, #ececec); --muted: var(--color-text-secondary, #a3a3a3); --line: var(--color-border-secondary, #454545); --soft: var(--color-background-secondary, #292929); --action: var(--color-background-inverse, #ececec); --on-action: var(--color-text-inverse, #171717); --error: var(--color-text-danger, #ff9690); }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --text: var(--color-text-primary, #ececec); --muted: var(--color-text-secondary, #a3a3a3); --line: var(--color-border-secondary, #454545); --soft: var(--color-background-secondary, #292929); --action: var(--color-background-inverse, #ececec); --on-action: var(--color-text-inverse, #171717); --error: var(--color-text-danger, #ff9690); }
     }
     * { box-sizing: border-box; }
-    html, body { min-height: 0; }
-    body { margin: 0; min-width: 0; overflow: hidden; background: var(--bg); color: var(--text); }
-    main { display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto auto; width: min(1120px, 100%); height: 720px; margin: 0 auto; padding: 20px; overflow: hidden; }
-    header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
-    h1 { margin: 0; font-size: 21px; line-height: 1.3; letter-spacing: 0; }
-    .subtitle { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
-    .status { min-height: 20px; max-width: 440px; color: var(--accent); font-size: 13px; line-height: 1.45; text-align: right; }
-    .status[data-kind="error"] { color: var(--danger); }
-    .status[data-kind="warning"] { color: var(--warning); }
-    .status[data-kind="busy"] { color: var(--focus); }
+    html, body { margin: 0; min-width: 0; background: transparent; color: var(--text); }
+    main { width: 100%; padding: 4px 2px; }
     [hidden] { display: none !important; }
-    button, textarea, input { font: inherit; color: inherit; }
-    button { min-height: 36px; border: 1px solid var(--border); border-radius: 6px; padding: 7px 11px; background: var(--surface); cursor: pointer; }
-    button:hover { background: var(--surface-subtle); }
-    button:disabled { opacity: .5; cursor: not-allowed; }
-    button:focus-visible, #editor:focus { outline: 3px solid color-mix(in srgb, var(--focus) 35%, transparent); outline-offset: 1px; border-color: var(--focus); }
-    .mode-row { z-index: 10; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--border); background: var(--surface); }
-    .tabs, .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-    .tabs button { border: 0; border-bottom: 3px solid transparent; border-radius: 0; background: transparent; }
-    .tabs button[aria-selected="true"] { border-bottom-color: var(--focus); color: var(--focus); font-weight: 650; }
-    .toolbar { padding: 8px 0; }
-    .toolbar button { flex: 0 0 auto; white-space: nowrap; }
-    .toolbar .finish { border-color: transparent; background: var(--accent); color: var(--on-accent); font-weight: 650; }
-    .toolbar .finish:hover { background: color-mix(in srgb, var(--accent) 88%, var(--surface)); }
-    #canvas-view, #source-view { min-height: 0; overflow-y: auto; overscroll-behavior: contain; background: var(--surface); border-bottom: 1px solid var(--border); }
-    #canvas { min-height: 100%; padding: 22px clamp(14px, 4vw, 52px); }
-    #canvas-editor { display: block; width: 100%; min-height: 430px; height: 100%; resize: none; overflow: auto; border: 0; border-radius: 0; padding: 4px 0 24px; background: transparent; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; }
-    #canvas-editor:focus { outline: 2px solid transparent; outline-offset: 1px; box-shadow: inset 3px 0 0 var(--focus); }
-    #source-view { padding: 16px; }
-    #editor { width: 100%; min-height: 100%; resize: none; border: 1px solid var(--border); border-radius: 6px; padding: 14px; background: var(--surface); line-height: 1.55; font-family: ui-monospace, "Cascadia Code", monospace; }
-    .footer-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding-top: 10px; }
-    .meta { min-width: 0; color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
-    .history { max-height: 160px; margin-top: 12px; overflow-y: auto; }
-    .history summary { cursor: pointer; font-size: 13px; font-weight: 650; }
-    .revision { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
-    .revision-copy { min-width: 0; overflow-wrap: anywhere; white-space: pre-line; }
-    .revision button { min-height: 30px; padding: 4px 8px; font-size: 12px; }
-    .review-dialog { width: min(880px, calc(100% - 32px)); max-height: 640px; border: 1px solid var(--border); border-radius: 6px; padding: 0; background: var(--surface); color: var(--text); }
-    .review-dialog[open] { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; }
-    .review-dialog::backdrop { background: color-mix(in srgb, #000000 48%, transparent); }
-    .review-header { padding: 18px 20px 14px; border-bottom: 1px solid var(--border); }
-    .review-header h2 { margin: 0; font-size: 18px; line-height: 1.35; letter-spacing: 0; }
-    .review-header p { margin: 6px 0 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
-    .review-content { min-height: 260px; max-height: 440px; margin: 0; overflow: auto; padding: 18px 20px; background: var(--surface-subtle); white-space: pre-wrap; overflow-wrap: anywhere; font-family: ui-monospace, "Cascadia Code", monospace; font-size: 14px; line-height: 1.55; user-select: text; }
-    .review-content:focus { outline: 3px solid color-mix(in srgb, var(--focus) 35%, transparent); outline-offset: -3px; }
-    .review-footer { display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding: 12px 20px; border-top: 1px solid var(--border); }
-    .review-submit { border-color: transparent; background: var(--accent); color: var(--on-accent); font-weight: 650; }
-    .review-submit:hover { background: color-mix(in srgb, var(--accent) 88%, var(--surface)); }
-    @media (prefers-color-scheme: dark) {
-      :root { --bg: #15191d; --surface: #20262c; --surface-subtle: #2a3239; --text: #edf2f7; --muted: #aeb9c4; --border: #46525e; --focus: #79b8ff; --accent: #7dd3a7; --on-accent: #102a20; --danger: #ff9b8f; --warning: #f0bd70; }
-    }
-    @media (max-width: 640px) {
-      main { padding: 12px; }
-      header, .footer-row { display: block; }
-      .status { margin-top: 8px; text-align: left; }
-      .mode-row { align-items: flex-start; flex-direction: column; }
-      .toolbar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; }
-      .toolbar button { min-width: 0; min-height: 34px; padding: 5px 7px; font-size: 13px; }
-      #canvas { padding: 18px 10px; }
-      #canvas-editor { min-height: 470px; }
-      .review-dialog { width: calc(100% - 20px); max-height: 680px; }
-      .review-header, .review-content { padding-right: 14px; padding-left: 14px; }
-      .review-content { min-height: 300px; }
-      .review-footer { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 10px 14px; }
-      .review-footer button { min-width: 0; }
-    }
+    #reply { min-height: 1.75em; line-height: 1.75; overflow-wrap: anywhere; caret-color: var(--text); user-select: text; }
+    #reply:focus { outline: none; }
+    #reply:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 2px; }
+    #reply > :first-child { margin-top: 0; }
+    #reply > :last-child { margin-bottom: 0; }
+    #reply p { margin: 0 0 1em; }
+    #reply h1, #reply h2, #reply h3, #reply h4, #reply h5, #reply h6 { margin: 1.5em 0 .5em; line-height: 1.4; font-weight: 600; }
+    #reply h1 { font-size: 1.5em; } #reply h2 { font-size: 1.25em; } #reply h3, #reply h4, #reply h5, #reply h6 { font-size: 1em; }
+    #reply ul, #reply ol { padding-left: 1.5em; margin: 1em 0; } #reply li { margin: .25em 0; } #reply li > p { margin: .5em 0; }
+    #reply blockquote { margin: 1em 0; padding-left: 1em; border-left: 3px solid var(--line); color: var(--muted); }
+    #reply a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+    #reply code { font-family: var(--font-mono, ui-monospace, "Cascadia Code", monospace); font-size: .875em; background: var(--soft); padding: .1em .25em; border-radius: 3px; }
+    #reply pre { margin: 1em 0; padding: 1em; background: var(--soft); border-radius: 6px; white-space: pre-wrap; overflow-wrap: anywhere; }
+    #reply pre code { background: none; padding: 0; border-radius: 0; }
+    #reply table { width: 100%; table-layout: fixed; border-collapse: collapse; margin: 1em 0; font-size: .9375em; }
+    #reply th, #reply td { padding: .5em .75em; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+    #reply th { font-weight: 600; } #reply hr { border: 0; border-top: 1px solid var(--line); margin: 1.5em 0; }
+    .image-reference { color: var(--muted); border-bottom: 1px dashed var(--line); }
+    #edit-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+    button { font: inherit; font-size: .8125rem; min-height: 36px; padding: 6px 12px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); cursor: pointer; }
+    button:hover { background: var(--soft); color: var(--text); }
+    button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+    button:disabled { opacity: .45; cursor: default; }
+    #save { background: var(--action); color: var(--on-action); }
+    #notice { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; font-size: .75rem; color: var(--muted); }
+    #status:not(:empty) { margin-top: 8px; } #status[data-kind="error"] { color: var(--error); }
+    #notice button { padding-left: 0; text-decoration: underline; text-underline-offset: 3px; }
+    @media (max-width: 480px) { #reply th, #reply td { padding: .5em; } button { min-height: 40px; } }
   </style>
 </head>
 <body>
-  <main>
-    <header>
-      <div>
-        <h1 id="page-title">Codex 上下文画布</h1>
-        <p class="subtitle">直接修改文字和表格，完成编辑时保存</p>
-      </div>
-      <div id="status" class="status" role="status" aria-live="polite"></div>
-    </header>
-
-    <div class="mode-row">
-      <div class="tabs" role="tablist" aria-label="编辑视图">
-        <button id="canvas-tab" type="button" role="tab" aria-selected="true" aria-controls="canvas-view">画布</button>
-        <button id="source-tab" type="button" role="tab" aria-selected="false" aria-controls="source-view">源码</button>
-      </div>
-      <div class="toolbar" aria-label="画布工具">
-        <button id="finish-editing" type="button" class="finish">完成编辑</button>
-        <button id="reset" type="button">恢复当前版本</button>
-      </div>
+  <main aria-label="可编辑回复">
+    <article id="reply" contenteditable="false" tabindex="0" role="textbox" aria-multiline="true" aria-label="回复正文，点击可直接修改" aria-describedby="status" spellcheck="true"></article>
+    <div id="edit-actions" hidden>
+      <button id="cancel" type="button">取消</button>
+      <button id="save" type="button" disabled>保存</button>
     </div>
-
-    <section id="canvas-view" role="tabpanel" aria-labelledby="canvas-tab">
-      <div id="canvas" aria-label="可编辑上下文画布">
-        <textarea id="canvas-editor" maxlength="1000000" spellcheck="true" aria-label="完整 Markdown 正文" aria-describedby="meta"></textarea>
-      </div>
-    </section>
-    <section id="source-view" role="tabpanel" aria-labelledby="source-tab" hidden>
-      <label id="editor-label" for="editor">Markdown 源码</label>
-      <textarea id="editor" maxlength="1000000" spellcheck="true" aria-describedby="meta"></textarea>
-    </section>
-
-    <div class="footer-row">
-      <div id="meta" class="meta"></div>
+    <div id="notice">
+      <span id="status" role="status" aria-live="polite">正在加载正文…</span>
+      <button id="load-draft" type="button" hidden>载入旧草稿</button>
+      <button id="retry-notice" type="button" hidden>重试通知对话</button>
     </div>
-    <details id="history-panel" class="history">
-      <summary>版本历史</summary>
-      <div id="history"></div>
-    </details>
   </main>
-  <dialog id="review-dialog" class="review-dialog" aria-labelledby="review-title" aria-describedby="review-help">
-    <div class="review-header">
-      <h2 id="review-title">提交前最后检查</h2>
-      <p id="review-help">以下是即将提交的完整原文。确认无误后再提交。</p>
-    </div>
-    <pre id="review-content" class="review-content" tabindex="0" aria-label="待提交完整原文"></pre>
-    <div class="review-footer">
-      <button id="review-cancel" type="button">返回修改</button>
-      <button id="review-submit" type="button" class="review-submit">确认提交</button>
-    </div>
-  </dialog>
-  <script src="canvas-model.js"></script>
+  <script src="../node_modules/markdown-it/dist/browser/markdown-it.umd.min.js"></script>
+  <script src="../node_modules/turndown/dist/turndown.js"></script>
+  <script src="../node_modules/turndown-plugin-gfm/dist/turndown-plugin-gfm.js"></script>
+  <script src="rich-text.js"></script>
   <script src="editor.js"></script>
 </body>
 </html>

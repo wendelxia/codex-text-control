@@ -13,7 +13,7 @@ export function createWidgetBridge({
   CustomEventClass,
   connectTimeoutMs = 15_000,
   requestTimeoutMs = 30_000,
-  appVersion = "0.5.9",
+  appVersion = "0.6.0",
 } = {}) {
   const eventClass = CustomEventClass || target?.CustomEvent;
   const publish = (globals) => {
@@ -62,10 +62,7 @@ export function createWidgetBridge({
         toolOutput: result?._meta?.widgetData || result?.structuredContent || result,
       });
       app.addEventListener("toolresult", publishToolOutput);
-      target.addEventListener("message", (event) => {
-        const result = event.data?.params?.result;
-        if (event.data?.method === "ui/notifications/tool-result" && result) publishToolOutput(result);
-      });
+      app.addEventListener("hostcontextchanged", (context) => publish({ hostContext: { ...app.getHostContext?.(), ...context } }));
     } catch (error) {
       unavailable(`Codex 应用桥接初始化失败：${asError(error).message}`);
     }
@@ -114,21 +111,29 @@ export function createWidgetBridge({
 
 export async function registerTextControlWidget(server, { uri, html }) {
   const metadata = {
-    ui: { prefersBorder: true, csp: { connectDomains: [], resourceDomains: [], frameDomains: [] } },
-    "openai/widgetDescription": "在一个连续正文编辑器中直接修改 Codex 权威 Markdown，完成编辑时保存版本，或只修改命名 AI 扩展点。",
-    "openai/widgetPrefersBorder": true,
+    ui: { prefersBorder: false, csp: { connectDomains: [], resourceDomains: [], frameDomains: [] } },
+    "openai/widgetDescription": "An inline reply shown as formatted prose. Click to edit in one continuous editor, then Save or Cancel in place. The body is already visible: do not repeat it in a separate assistant message. Saved revisions are project context, not replacements for native chat history.",
+    "openai/widgetPrefersBorder": false,
     "openai/widgetCSP": { connect_domains: [], resource_domains: [], frame_domains: [] },
   };
   // 插件升级可能在旧 MCP 进程退出前回收它的缓存目录。启动时把完整资源放进内存，
   // 后续 resources/read（资源读取）就不会再次依赖已经可能不存在的安装文件。
   const widgetHtml = injectBridge(await html());
   registerAppResource(server, "codex-text-control-widget", uri, {
-    title: "Codex 上下文画布",
-    description: "在 Codex 内通过连续正文编辑器修改上下文 Markdown 或指定 AI 扩展点，并在完成编辑时保存权威版本。",
+    title: "Editable reply",
+    description: "Read formatted prose, edit in place, and save a confirmed revision for the next conversation turn.",
     _meta: metadata,
   }, async () => ({
     contents: [{ uri, mimeType: RESOURCE_MIME_TYPE, text: widgetHtml, _meta: metadata }],
   }));
+}
+
+export function readEditorHtml() {
+  const url = new URL("../ui/editor.html", import.meta.url);
+  return readFileSync(url, "utf8").replace(/<script src="([^"]+)"><\/script>/g, (_tag, source) => {
+    const script = readFileSync(new URL(source, url), "utf8");
+    return `<script>${script.replaceAll("</script", "<\\/script")}</script>`;
+  });
 }
 
 function injectBridge(html) {

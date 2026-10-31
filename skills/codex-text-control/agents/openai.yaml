@@ -1,4 +1,4 @@
 interface:
   display_name: "Codex Text Control"
-  short_description: "整理结论稿并直接编辑权威上下文，完成时保存一个版本"
-  default_prompt: "使用 $codex-text-control 整理讨论结论或建议稿，在发送前打开上下文画布让我直接修改。"
+  short_description: "像阅读回复一样阅读正文，点进去改，原位保存或取消"
+  default_prompt: "使用 $codex-text-control 把这份回复显示为可直接修改的正文，只显示一份内容，编辑时出现保存和取消。"

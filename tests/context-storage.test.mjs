@@ -1,8 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { fork } from "node:child_process";
+import { fork, spawn } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdir, mkdtemp, readFile, unlink, utimes, writeFile } from "node:fs/promises";
+import fs from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, readFile, unlink, utimes, writeFile } from "node:fs/promises";
+import { syncBuiltinESMExports } from "node:module";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
@@ -10,15 +12,33 @@ import { join } from "node:path";
 import {
   commitAuthoritativeContext,
   getAuthoritativeContext,
+  getRecentAuthoritativeContext,
   getCurrentContext,
+  getContextDraft,
   listContextRevisions,
+  saveContextDraft,
   saveContextExtensionRevision,
   saveContextRevision,
+  discardContextDraft,
   updateAuthoritativeContext,
 } from "../mcp/context-storage.mjs";
 
 async function projectFixture() {
   return mkdtemp(join(tmpdir(), "codex-text-control-test-"));
+}
+
+function mockFilesystem(t, method, handler) {
+  const original = fs[method];
+  const mocked = t.mock.method(fs, method, (...args) => handler(original, ...args));
+  syncBuiltinESMExports();
+  t.after(() => { mocked.mock.restore(); syncBuiltinESMExports(); });
+}
+
+function draftSessionFiles(projectDir, sessionId) {
+  const scope = createHash("sha256").update("full\0").digest("hex");
+  const session = createHash("sha256").update(sessionId).digest("hex");
+  const directory = join(projectDir, ".codex-text-control", "drafts", scope);
+  return { cancelled: join(directory, `cancelled-${session}.json`), snapshot: (version) => join(directory, `draft-${session}-${version}.json`) };
 }
 
 const concurrentUpdateWorker = fileURLToPath(new URL("./fixtures/context-update-worker.mjs", import.meta.url));
@@ -582,4 +602,227 @@ test("存在旧版 write.lock 时，多进程同基准更新仍最多一个成�
     }
     assert.equal((await listContextRevisions({ projectDir })).length, 2);
   }
+});
+
+test("草稿独立持久化并可恢复，但不会改变权威版本或正式历史", async () => {
+  const projectDir = await projectFixture();
+  const committed = await updateAuthoritativeContext({
+    projectDir,
+    content: "权威正文",
+    expectedCurrentRevisionId: null,
+  });
+
+  const draft = await saveContextDraft({
+    projectDir,
+    content: "切换对话前的未提交修改",
+    baseRevisionId: committed.revision.id,
+    mode: "full",
+  });
+
+  assert.equal(draft.content, "切换对话前的未提交修改");
+  assert.equal((await getAuthoritativeContext({ projectDir })).content, "权威正文");
+  assert.equal((await listContextRevisions({ projectDir })).length, 1);
+
+  const restored = await getContextDraft({ projectDir, mode: "full" });
+  assert.equal(restored.content, draft.content);
+  assert.equal(restored.baseRevisionId, committed.revision.id);
+
+  await discardContextDraft({ projectDir, mode: "full" });
+  assert.equal(await getContextDraft({ projectDir, mode: "full" }), null);
+});
+
+test("模型读取接口只返回最近正文，完整正文仍由内部权威读取保留", async () => {
+  const projectDir = await projectFixture();
+  const content = `${"前置内容\n".repeat(4_000)}末尾锚点`;
+  await updateAuthoritativeContext({ projectDir, content, expectedCurrentRevisionId: null });
+
+  const recent = await getRecentAuthoritativeContext({ projectDir });
+  assert.equal(recent.revisionId.startsWith("rev-"), true);
+  assert.equal(recent.truncated, true);
+  assert.equal(recent.content.endsWith("末尾锚点"), true);
+  assert.equal(recent.content.includes("前置内容"), true);
+  assert.equal((await getAuthoritativeContext({ projectDir })).content, content);
+});
+
+test("损坏的草稿记录不会被当作编辑内容读取", async () => {
+  const projectDir = await projectFixture();
+  const root = join(projectDir, ".codex-text-control");
+  const key = createHash("sha256").update("full\0").digest("hex");
+  await mkdir(join(root, "drafts"), { recursive: true });
+  await writeFile(join(root, "drafts", `${key}.json`), JSON.stringify({ content: "缺少必要字段" }), "utf8");
+
+  await assert.rejects(
+    () => getContextDraft({ projectDir, mode: "full" }),
+    /草稿记录损坏|草稿模式无效/,
+  );
+});
+
+test("one draft session can be cancelled without deleting a newer session", async () => {
+  const projectDir = await projectFixture();
+  await saveContextDraft({ projectDir, content: "A draft", draftSessionId: "session-a", draftVersion: 1 });
+  await saveContextDraft({ projectDir, content: "B draft", draftSessionId: "session-b", draftVersion: 1 });
+  await discardContextDraft({ projectDir, draftSessionId: "session-a" });
+  assert.equal((await getContextDraft({ projectDir }))?.content, "B draft");
+});
+
+test("out-of-order draft writes cannot replace a newer version or resurrect a cancelled session", async () => {
+  const projectDir = await projectFixture();
+  const args = { projectDir, draftSessionId: "delayed-session" };
+  await saveContextDraft({ ...args, content: "Latest edit", draftVersion: 2 });
+  await saveContextDraft({ ...args, content: "Delayed old edit", draftVersion: 1 });
+  assert.equal((await getContextDraft({ projectDir }))?.content, "Latest edit");
+  await discardContextDraft(args);
+  await saveContextDraft({ ...args, content: "Write arriving after cancel", draftVersion: 3 });
+  assert.equal(await getContextDraft({ projectDir }), null);
+});
+
+test("draft cancellation racing a write keeps the session cancelled", async () => {
+  const projectDir = await projectFixture();
+  for (let round = 0; round < 8; round += 1) {
+    const args = { projectDir, draftSessionId: `racing-session-${round}` };
+    await Promise.all([
+      saveContextDraft({ ...args, content: `Concurrent edit ${round}`, draftVersion: 1 }),
+      discardContextDraft(args),
+    ]);
+    assert.equal(await getContextDraft({ projectDir }), null);
+  }
+});
+
+test("an active session retains only its newest full-content draft snapshot", async () => {
+  const projectDir = await projectFixture();
+  const args = { projectDir, draftSessionId: "bounded-session" };
+  for (let version = 1; version <= 12; version += 1) {
+    await saveContextDraft({ ...args, content: `Edit ${version}: ${"x".repeat(64_000)}`, draftVersion: version });
+  }
+  await saveContextDraft({ ...args, content: "An older delayed request", draftVersion: 0 });
+  const key = createHash("sha256").update("full\0").digest("hex");
+  const files = await readdir(join(projectDir, ".codex-text-control", "drafts", key));
+  assert.equal(files.filter((name) => /^draft-.*\.json$/.test(name)).length, 1);
+  assert.match((await getContextDraft({ projectDir })).content, /^Edit 12:/);
+});
+
+test("readers never fall back to a legacy draft while session snapshots are pruned", async () => {
+  const projectDir = await projectFixture();
+  await saveContextDraft({ projectDir, content: "Legacy content" });
+  const args = { projectDir, draftSessionId: "pruning-session" };
+  await saveContextDraft({ ...args, content: "Session 0", draftVersion: 0 });
+  for (let version = 1; version <= 20; version += 1) {
+    const [, ...readers] = await Promise.all([
+      saveContextDraft({ ...args, content: `Session ${version}`, draftVersion: version }),
+      ...Array.from({ length: 4 }, () => getContextDraft({ projectDir })),
+    ]);
+    for (const draft of readers) assert.match(draft?.content || "", /^Session /);
+  }
+});
+
+test("draft order and cancellation survive delayed writes from another MCP process", async (t) => {
+  const projectDir = await projectFixture();
+  const args = { projectDir, draftSessionId: "cross-process" };
+  const delayedWrite = async (options) => {
+    const source = `import { saveContextDraft } from ${JSON.stringify(new URL("../mcp/context-storage.mjs", import.meta.url).href)};
+      process.once("message", async () => {
+        try { await saveContextDraft(JSON.parse(process.argv[1])); process.send({ ok: true }); }
+        catch (error) { process.send({ error: error.message }); }
+        finally { process.disconnect(); }
+      });
+      process.send({ ready: true });`;
+    const child = spawn(process.execPath, ["--input-type=module", "--eval", source, JSON.stringify(options)], { stdio: ["ignore", "ignore", "inherit", "ipc"] });
+    t.after(() => { if (child.exitCode === null) child.kill(); });
+    let ready;
+    const started = new Promise((resolve) => { ready = resolve; });
+    const completed = new Promise((resolve, reject) => {
+      child.on("message", (message) => {
+        if (message.ready) ready();
+        else if (message.error) reject(new Error(message.error));
+        else if (message.ok) resolve();
+      });
+      child.on("error", reject);
+      child.on("exit", (code) => { if (code) reject(new Error(`Draft worker exited with ${code}`)); });
+    });
+    await started;
+    return { complete: () => { child.send({ write: true }); return completed; } };
+  };
+  const older = await delayedWrite({ ...args, content: "Old process write", draftVersion: 1 });
+  await saveContextDraft({ ...args, content: "Latest process write", draftVersion: 2 });
+  await older.complete();
+  assert.equal((await getContextDraft({ projectDir }))?.content, "Latest process write");
+
+  const cancelled = await delayedWrite({ ...args, content: "After cancellation", draftVersion: 3 });
+  await discardContextDraft(args);
+  await cancelled.complete();
+  assert.equal(await getContextDraft({ projectDir }), null);
+});
+
+test("obsolete draft cleanup retries transient Windows sharing errors", async (t) => {
+  const projectDir = await projectFixture();
+  const args = { projectDir, draftSessionId: "retry-cleanup" };
+  const paths = draftSessionFiles(projectDir, args.draftSessionId);
+  await saveContextDraft({ ...args, content: "Old", draftVersion: 1 });
+  let attempts = 0;
+  mockFilesystem(t, "unlink", async (original, path) => {
+    if (path === paths.snapshot(1) && ++attempts <= 2) throw Object.assign(new Error("File temporarily in use"), { code: attempts === 1 ? "EPERM" : "EBUSY" });
+    return original(path);
+  });
+  await saveContextDraft({ ...args, content: "New", draftVersion: 2 });
+  assert.equal(attempts, 3);
+  await assert.rejects(() => readFile(paths.snapshot(1)), { code: "ENOENT" });
+  assert.equal((await getContextDraft({ projectDir })).content, "New");
+});
+
+test("busy leftover snapshots stay invisible after replacement or cancellation", async (t) => {
+  const projectDir = await projectFixture();
+  const args = { projectDir, draftSessionId: "busy-cleanup" };
+  const paths = draftSessionFiles(projectDir, args.draftSessionId);
+  await saveContextDraft({ ...args, content: "Old", draftVersion: 1 });
+  mockFilesystem(t, "unlink", async (original, path) => {
+    if (path === paths.snapshot(1) || path === paths.snapshot(2)) throw Object.assign(new Error("File remains in use"), { code: "EPERM" });
+    return original(path);
+  });
+  await saveContextDraft({ ...args, content: "New", draftVersion: 2 });
+  assert.equal((await getContextDraft({ projectDir })).content, "New");
+  assert.equal(JSON.parse(await readFile(paths.snapshot(1), "utf8")).content, "Old");
+  await discardContextDraft(args);
+  mockFilesystem(t, "readFile", async (original, path, ...options) => {
+    if (path === paths.snapshot(1) || path === paths.snapshot(2)) throw Object.assign(new Error("Cancelled payload is still locked"), { code: "EPERM" });
+    return original(path, ...options);
+  });
+  assert.equal(await getContextDraft({ projectDir }), null);
+});
+
+test("a cancellation published during save survives busy snapshot cleanup", async (t) => {
+  const projectDir = await projectFixture();
+  const args = { projectDir, draftSessionId: "cancel-during-save" };
+  const paths = draftSessionFiles(projectDir, args.draftSessionId);
+  mockFilesystem(t, "link", async (original, source, target) => {
+    await original(source, target);
+    if (target === paths.snapshot(1)) await writeFile(paths.cancelled, JSON.stringify({ draftSessionId: args.draftSessionId }));
+  });
+  mockFilesystem(t, "unlink", async (original, path) => {
+    if (path === paths.snapshot(1)) throw Object.assign(new Error("File remains in use"), { code: "EBUSY" });
+    return original(path);
+  });
+  assert.equal(await saveContextDraft({ ...args, content: "Cancelled", draftVersion: 1 }), null);
+  assert.equal(await getContextDraft({ projectDir }), null);
+});
+
+test("cleanup errors without invisibility proof and snapshot publication errors remain failures", async (t) => {
+  const projectDir = await projectFixture();
+  const args = { projectDir, draftSessionId: "unproven-cleanup" };
+  const paths = draftSessionFiles(projectDir, args.draftSessionId);
+  await saveContextDraft({ ...args, content: "Still visible", draftVersion: 1 });
+  mockFilesystem(t, "unlink", async (original, path) => {
+    if (path === paths.snapshot(1)) {
+      await original(paths.snapshot(2)).catch((error) => { if (error.code !== "ENOENT") throw error; });
+      throw Object.assign(new Error("Cannot remove visible draft"), { code: "EPERM" });
+    }
+    return original(path);
+  });
+  await assert.rejects(() => saveContextDraft({ ...args, content: "Lost successor", draftVersion: 2 }), { code: "EPERM" });
+  assert.equal((await getContextDraft({ projectDir })).content, "Still visible");
+  mockFilesystem(t, "link", async (original, source, target) => {
+    if (target === paths.snapshot(3)) throw Object.assign(new Error("Disk write failed"), { code: "EIO" });
+    return original(source, target);
+  });
+  await assert.rejects(() => saveContextDraft({ ...args, content: "Failed new write", draftVersion: 3 }), { code: "EIO" });
+  assert.equal((await getContextDraft({ projectDir })).content, "Still visible");
 });
