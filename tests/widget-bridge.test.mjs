@@ -94,3 +94,23 @@ test("Widget 工具永久不返回时会在超时后明确失败", async () => {
     /超时/,
   );
 });
+
+test("host context updates arrive through the SDK; arbitrary window messages are ignored", async () => {
+  const listeners = new Map();
+  class FakeApp {
+    addEventListener(name, callback) { listeners.set(name, callback); }
+    async connect() {}
+    getHostContext() { return { theme: "light", locale: "zh-CN" }; }
+    getHostCapabilities() { return {}; }
+  }
+  const target = new FakeWindow();
+  widgetResource.createWidgetBridge({ App: FakeApp, target, CustomEventClass: FakeCustomEvent });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  listeners.get("hostcontextchanged")({ theme: "dark" });
+  assert.equal(target.openai.hostContext.theme, "dark");
+  assert.equal(target.openai.hostContext.locale, "zh-CN");
+  target.dispatchEvent({ type: "message", data: { method: "ui/notifications/tool-result", params: { result: { structuredContent: { sourceText: "untrusted" } } } } });
+  assert.equal(target.openai.toolOutput, undefined);
+  listeners.get("toolresult")({ _meta: { widgetData: { sourceText: "trusted transport" } } });
+  assert.equal(target.openai.toolOutput.sourceText, "trusted transport");
+});

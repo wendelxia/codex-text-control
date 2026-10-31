@@ -1,6 +1,6 @@
 {
   "name": "codex-text-control",
-  "version": "0.5.11",
+  "version": "0.6.0",
   "description": "Edit one continuous context body in Codex and save an authoritative revision when finished.",
   "private": true,
   "license": "MIT",
@@ -18,17 +18,24 @@
   },
   "scripts": {
     "test": "node --test",
-    "check": "node --check ./mcp/server.mjs && node --check ./mcp/context-storage.mjs && node --check ./mcp/context-extensions.mjs && node --check ./mcp/widget-resource.mjs && node --check ./ui/canvas-model.js && node --check ./ui/editor.js && node --check ./scripts/start-mcp.mjs && node --check ./scripts/probe-mcp.mjs && node --check ./scripts/promo-content.mjs && node --check ./scripts/promo-html.mjs && node --check ./scripts/public-media-guard.mjs && node --check ./scripts/public-media-publisher.mjs && node --check ./scripts/render-github-promo.mjs",
+    "check": "node --check ./mcp/server.mjs && node --check ./mcp/context-storage.mjs && node --check ./mcp/context-extensions.mjs && node --check ./mcp/widget-resource.mjs && node --check ./ui/canvas-model.js && node --check ./ui/rich-text.js && node --check ./scripts/preview.mjs && node --check ./ui/editor.js && node --check ./scripts/start-mcp.mjs && node --check ./scripts/probe-mcp.mjs && node --check ./scripts/promo-content.mjs && node --check ./scripts/promo-html.mjs && node --check ./scripts/public-media-guard.mjs && node --check ./scripts/public-media-publisher.mjs && node --check ./scripts/render-github-promo.mjs",
     "probe:mcp": "node ./scripts/probe-mcp.mjs",
     "render:promo:github": "node ./scripts/render-github-promo.mjs",
     "quality": "npm test && npm run check && npm run probe:mcp",
     "audit:prod": "npm audit --omit=dev --audit-level=high --registry=https://registry.npmjs.org/",
     "audit:signatures": "npm audit signatures --registry=https://registry.npmjs.org/",
-    "verify:candidate": "npm run quality && npm run audit:prod && npm run audit:signatures"
+    "verify:candidate": "npm run quality && npm run audit:prod && npm run audit:signatures",
+    "preview": "node ./scripts/preview.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/ext-apps": "^1.7.4",
-    "@modelcontextprotocol/sdk": "^1.29.0",
-    "zod": "^4.4.3"
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "markdown-it": "15.0.3",
+    "turndown": "7.2.4",
+    "turndown-plugin-gfm": "1.0.2",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "jsdom": "26.1.0"
   }
 }

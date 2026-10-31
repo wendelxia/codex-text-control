@@ -2,6 +2,21 @@
 
 本文件记录用户能感知的变化、修复、已知限制和回退方法。版本号遵循 Semantic Versioning（语义化版本）：`主版本.次版本.修订版本`。
 
+## [0.6.0] - 2026-11-01
+
+Pre-release. The redesigned editor has automated and Chromium verification; a cross-platform Codex host matrix is not yet available.
+
+- Replace the two textareas, tabs, fixed-height canvas and confirmation modal with one rendered Markdown reply. Click to edit in place; Save and Cancel appear only while editing.
+- Preserve untouched Markdown blocks and render tables, lists, emphasis and code. HTML remains inert; images retain their source without network loading.
+- Preserve task-list markers and quoted image titles when nearby text is edited.
+- Keep draft recovery, immutable revisions, optimistic concurrency and restricted extension-point updates. Failed notifications can retry without creating a second revision.
+- Isolate each editor's draft cleanup, prevent delayed writes from restoring cancelled edits, and clear stale drafts after undoing back to the original text. Keep failed-notification retries available while a new reply is waiting.
+- Follow host theme changes, request borderless rendering, and let content determine height.
+- Add optional full-content reads so edits above the recent excerpt remain accessible.
+- Update the MCP SDK, Zod, and affected transitive dependencies to compatible security fixes; verify the lockfile with registry signatures.
+- Replace the former textarea/modal interaction tests with real DOM tests for the new flow. Native transcript replacement is not supported.
+- Add a public Codex marketplace entry and install instructions. First startup checks every production dependency, installs from the lockfile, and keeps installation logs out of the MCP protocol stream.
+
 ## [0.5.11] - 2026-09-03
 
 ### Fixed

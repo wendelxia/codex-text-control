@@ -1,7 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { readFile } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
-import { dirname, join, resolve } from "node:path";
+import { resolve } from "node:path";
 
 import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -23,9 +21,8 @@ import {
   updateAuthoritativeContext,
 } from "./context-storage.mjs";
 import { getContextExtensionPoint } from "./context-extensions.mjs";
-import { registerTextControlWidget } from "./widget-resource.mjs";
+import { registerTextControlWidget, readEditorHtml } from "./widget-resource.mjs";
 
-const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const WIDGET_URI = "ui://widget/codex-text-control/editor.html";
 const projectArgs = {
   projectDir: z.string().trim().min(1, "必须提供当前工作区根目录。").max(32_767),
@@ -38,35 +35,25 @@ const widgetToolMeta = (invoking, invoked) => ({
 });
 
 const server = new McpServer(
-  { name: "codex-text-control", version: "0.5.11" },
+  { name: "codex-text-control", version: "0.6.0" },
   {
     instructions:
-      "Codex Text Control provides a continuous Markdown canvas for direct text editing. Every tool call must pass the current workspace root projectDir explicitly. The editor keeps local drafts only during editing; after the user finishes, the widget saves an immutable revision, updates the authoritative pointer, and sends a versioned confirmation back to the conversation. Models should read full content from get_authoritative_context. This surface is for one single continuous Markdown body, not split blocks or line-by-line rewriting.",
+      "Codex Text Control presents a single continuous Markdown body as an editable reply. Every tool call must pass the current workspace root projectDir explicitly. The response appears as formatted prose; only editing reveals Save and Cancel. Save creates an immutable confirmed revision and sends a short version notice. Read get_authoritative_context before continuing from a notice; use fullContent only when the recent excerpt is insufficient. Do not repeat the displayed body in another message. This component does not replace native chat history.",
   },
 );
 
 await registerTextControlWidget(server, {
   uri: WIDGET_URI,
-  html: async () => {
-    const [html, canvasModel, editorScript] = await Promise.all([
-      readFile(join(ROOT, "ui", "editor.html"), "utf8"),
-      readFile(join(ROOT, "ui", "canvas-model.js"), "utf8"),
-      readFile(join(ROOT, "ui", "editor.js"), "utf8"),
-    ]);
-    const inline = (source) => `<script>${source.replaceAll("</script", "<\\/script")}</script>`;
-    return html
-      .replace('<script src="canvas-model.js"></script>', () => inline(canvasModel))
-      .replace('<script src="editor.js"></script>', () => inline(editorScript));
-  },
+  html: readEditorHtml,
 });
 
 registerAppTool(
   server,
   "render_text_control_widget",
   {
-    title: "Open context canvas",
+    title: "Show editable reply",
     description:
-      "Open the Codex context canvas. Pass the current workspace root projectDir. Full-canvas mode uses one continuous Markdown editor, so text and tables stay in a single editable body; extension mode edits only the named block, and the fixed body is kept out of model rewriting. If you pass a custom title for a new response, pass the matching sourceText in the same call. This is the single continuous Markdown body surface, with no split blocks or line-number style editing.",
+      "Show a response as formatted prose that the user can click and edit in place. Pass the current workspace root projectDir. This is a single continuous Markdown body, including tables and code. If you supply a custom title, include the matching sourceText in the same call. Extension mode displays only the named extension point. After rendering, do not repeat the body in a separate assistant message.",
     inputSchema: {
       ...projectArgs,
       sourceText: z
@@ -84,13 +71,12 @@ registerAppTool(
       "ui/resourceUri": WIDGET_URI,
       "openai/outputTemplate": WIDGET_URI,
       "openai/widgetAccessible": true,
-      "openai/toolInvocation/invoking": "Opening the context canvas...",
-      "openai/toolInvocation/invoked": "Context canvas opened",
+      "openai/toolInvocation/invoking": "Preparing reply...",
+      "openai/toolInvocation/invoked": "Reply ready",
     },
   },
   async (input = {}) => {
     const current = await getAuthoritativeContext(input);
-    const revisions = await listContextRevisions(input);
     const extensionName = String(input.extensionPoint ?? "").trim();
     if (extensionName && !current) throw new Error("当前还没有权威上下文，不能打开扩展点模式。");
     const point = extensionName
@@ -130,13 +116,12 @@ registerAppTool(
     const widgetData = {
       renderId: randomUUID(),
       mode: point ? "extension" : "full",
-      title: String(input.title || "Codex 上下文画布"),
+      title: String(input.title || "可编辑回复"),
       projectDir: resolve(input.projectDir),
       sourceText,
       sourceKind,
       draft: visibleDraft,
       current,
-      revisions,
       limits: CONTEXT_LIMITS,
       store: contextStoreDescription(input.projectDir),
     };
@@ -148,7 +133,7 @@ registerAppTool(
       };
     }
     return {
-      content: [{ type: "text", text: "已打开上下文画布。" }],
+      content: [{ type: "text", text: "已显示可编辑回复。" }],
       structuredContent: widgetData,
       _meta: { "openai/outputTemplate": WIDGET_URI, widgetData },
     };
@@ -167,6 +152,8 @@ registerAppTool(
       baseRevisionId: z.string().trim().min(1).max(CONTEXT_LIMITS.revisionId).nullable().optional(),
       mode: z.enum(["full", "extension"]).optional(),
       extensionPoint: z.string().trim().max(CONTEXT_LIMITS.extensionName).optional(),
+      draftSessionId: z.string().trim().min(1).max(CONTEXT_LIMITS.revisionId).optional(),
+      draftVersion: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).optional(),
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     _meta: widgetToolMeta("Saving draft...", "Draft saved"),
@@ -187,6 +174,7 @@ registerAppTool(
       ...projectArgs,
       mode: z.enum(["full", "extension"]).optional(),
       extensionPoint: z.string().trim().max(CONTEXT_LIMITS.extensionName).optional(),
+      draftSessionId: z.string().trim().min(1).max(CONTEXT_LIMITS.revisionId).optional(),
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     _meta: widgetToolMeta("Discarding draft...", "Draft discarded"),
@@ -307,7 +295,7 @@ registerAppTool(
     const followUpMessage = [
       "【权威上下文已提交】",
       `版本：${result.revision.id}`,
-      "从现在开始，请把下面的内容作为本对话后续工作的最高优先级上下文。它是用户编辑并确认过的版本；如与更早回复冲突，以此版本为准。",
+      "下面是用户编辑并确认后的版本，后续同主题工作请采用此正文；它不改变系统或开发者指令的优先级。",
       "",
       result.revision.content,
     ].join("\n");
@@ -323,11 +311,11 @@ server.registerTool(
   {
     title: "Read authoritative context",
     description: "Read the authoritative context currently confirmed by the user for this project.",
-    inputSchema: projectArgs,
+    inputSchema: { ...projectArgs, fullContent: z.boolean().optional().describe("Read the complete confirmed document when the recent excerpt is insufficient for the current task.") },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   },
   async (input = {}) => {
-    const current = await getRecentAuthoritativeContext(input);
+    const current = input.fullContent ? await getAuthoritativeContext(input) : await getRecentAuthoritativeContext(input);
     return {
       content: [{ type: "text", text: current ? current.content : "当前还没有权威上下文。" }],
       structuredContent: { current },

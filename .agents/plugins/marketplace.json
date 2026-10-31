@@ -1,0 +1,20 @@
+{
+  "name": "codex-text-control",
+  "interface": {
+    "displayName": "Codex Text Control"
+  },
+  "plugins": [
+    {
+      "name": "codex-text-control",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

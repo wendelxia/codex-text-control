@@ -10,6 +10,27 @@ import { registerTextControlWidget } from "../mcp/widget-resource.mjs";
 
 const WIDGET_URI = "ui://widget/codex-text-control/editor.html";
 
+test("MCP preserves draft session ownership and cancellation across late writes", async () => {
+  const projectDir = await mkdtemp(join(tmpdir(), "ctc-draft-session-mcp-"));
+  const client = new Client({ name: "draft-session-contract", version: "0.6.0" });
+  await client.connect(new StdioClientTransport({ command: process.execPath, args: ["./scripts/start-mcp.mjs"] }));
+  const call = (name, args = {}) => client.callTool({ name, arguments: { projectDir, ...args } });
+  try {
+    const a = await call("save_context_draft", { content: "A", draftSessionId: "a", draftVersion: 1 });
+    assert.equal(a.structuredContent.draft.draftSessionId, "a");
+    await call("save_context_draft", { content: "B", draftSessionId: "b", draftVersion: 1 });
+    await call("discard_context_draft", { draftSessionId: "a" });
+    const late = await call("save_context_draft", { content: "Late A", draftSessionId: "a", draftVersion: 2 });
+    assert.equal(late.structuredContent.draft, null);
+    const rendered = await call("render_text_control_widget");
+    assert.equal(rendered.structuredContent.sourceText, "B");
+    assert.equal(rendered.structuredContent.draft.draftSessionId, "b");
+  } finally {
+    await client.close();
+    await rm(projectDir, { recursive: true, force: true });
+  }
+});
+
 test("发布版本在包、锁文件、插件、MCP、README 和变更记录中保持一致", async () => {
   const [packageText, lockText, manifestText, serverSource, widgetSource, readme, changelog] = await Promise.all([
     readFile(join(process.cwd(), "package.json"), "utf8"),
@@ -30,7 +51,7 @@ test("发布版本在包、锁文件、插件、MCP、README 和变更记录中�
   assert.match(serverSource, new RegExp(`version: ["']${version.replaceAll(".", "\\.")}["']`));
   assert.match(widgetSource, new RegExp(`appVersion = ["']${version.replaceAll(".", "\\.")}["']`));
   assert.match(readme, new RegExp(`version-${version.replaceAll(".", "\\.")}`));
-  assert.match(readme, new RegExp(`${version.replaceAll(".", "\\.")} public pre-release`));
+  assert.match(readme, new RegExp(`${version.replaceAll(".", "\\.")} is a pre-release`));
   assert.match(readme, /One continuous editor/);
   assert.match(changelog, new RegExp(`^## \\[${version.replaceAll(".", "\\.")}\\] - \\d{4}-\\d{2}-\\d{2}$`, "m"));
   assert.match(manifest.description, /single continuous Markdown body/i);
@@ -191,6 +212,8 @@ test("权威读取工具只向模型返回最近文本", async () => {
     assert.equal(result.structuredContent?.current?.truncated, true);
     assert.equal(result.structuredContent?.current?.content.endsWith("末尾锚点"), true);
     assert.equal(result.structuredContent?.current?.content.length < content.length, true);
+    const complete = await client.callTool({ name: "get_authoritative_context", arguments: { projectDir, fullContent: true } });
+    assert.equal(complete.structuredContent?.current?.content, content, "用户改动在正文前部时，模型必须能按需读取完整确认版本。");
   } finally {
     await client.close();
     await rm(projectDir, { recursive: true, force: true });
@@ -242,6 +265,8 @@ test("新项目提供非空候选正文时正常打开画布", async () => {
     });
     assert.notEqual(rendered.isError, true);
     assert.equal(rendered.structuredContent?.sourceText, sourceText);
+    const again = await client.callTool({ name: "render_text_control_widget", arguments: { projectDir, sourceText } });
+    assert.notEqual(again.structuredContent?.renderId, rendered.structuredContent?.renderId);
   } finally {
     await client.close();
     await rm(projectDir, { recursive: true, force: true });
@@ -313,6 +338,10 @@ test("MCP 返回的 Widget SDK 脚本保持完整且可执行解析", async () =
   try {
     const resource = await client.readResource({ uri: WIDGET_URI });
     const html = resource.contents?.[0]?.text || "";
+    assert.equal(resource.contents[0]._meta.ui.prefersBorder, false);
+    assert.equal(resource.contents[0]._meta["openai/widgetPrefersBorder"], false);
+    assert.match(html, /CodexRichText/);
+    assert.doesNotMatch(html, /<script src=/);
     const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map((match) => match[1]);
     assert.ok(scripts.length >= 3, "Widget 应包含 SDK、桥接和编辑器三段脚本。\n");
     assert.doesNotThrow(

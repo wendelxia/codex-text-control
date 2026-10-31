@@ -52,7 +52,7 @@ try {
   if (current.structuredContent?.current?.content !== canvasContent) throw new Error("画布更新后读取权威上下文失败。");
   const resource = await client.readResource({ uri: "ui://widget/codex-text-control/editor.html" });
   const html = resource.contents?.[0]?.text || "";
-  if (!html.includes("Codex 上下文画布") || !html.includes("CodexCanvasModel") || !html.includes("codexTextControlMcp")) throw new Error("widget 资源缺少画布、模型或桥接代码。");
+  if (!html.includes("可编辑回复") || !html.includes("CodexRichText") || !html.includes("codexTextControlMcp")) throw new Error("widget 资源缺少正文、模型或桥接代码。");
   const pointer = JSON.parse(await readFile(join(projectDir, ".codex-text-control", "current.json"), "utf8"));
   if (pointer.revisionId !== canvasRevisionId) throw new Error("current.json 指针不正确。");
   console.log("OK: Codex Text Control MCP 工具、上下文画布、表格、扩展点和权威上下文闭环可用。");

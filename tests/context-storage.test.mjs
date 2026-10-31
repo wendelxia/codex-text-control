@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { fork } from "node:child_process";
+import { fork, spawn } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdir, mkdtemp, readFile, unlink, utimes, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, readFile, unlink, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
@@ -639,4 +639,100 @@ test("损坏的草稿记录不会被当作编辑内容读取", async () => {
     () => getContextDraft({ projectDir, mode: "full" }),
     /草稿记录损坏|草稿模式无效/,
   );
+});
+
+test("one draft session can be cancelled without deleting a newer session", async () => {
+  const projectDir = await projectFixture();
+  await saveContextDraft({ projectDir, content: "A draft", draftSessionId: "session-a", draftVersion: 1 });
+  await saveContextDraft({ projectDir, content: "B draft", draftSessionId: "session-b", draftVersion: 1 });
+  await discardContextDraft({ projectDir, draftSessionId: "session-a" });
+  assert.equal((await getContextDraft({ projectDir }))?.content, "B draft");
+});
+
+test("out-of-order draft writes cannot replace a newer version or resurrect a cancelled session", async () => {
+  const projectDir = await projectFixture();
+  const args = { projectDir, draftSessionId: "delayed-session" };
+  await saveContextDraft({ ...args, content: "Latest edit", draftVersion: 2 });
+  await saveContextDraft({ ...args, content: "Delayed old edit", draftVersion: 1 });
+  assert.equal((await getContextDraft({ projectDir }))?.content, "Latest edit");
+  await discardContextDraft(args);
+  await saveContextDraft({ ...args, content: "Write arriving after cancel", draftVersion: 3 });
+  assert.equal(await getContextDraft({ projectDir }), null);
+});
+
+test("draft cancellation racing a write keeps the session cancelled", async () => {
+  const projectDir = await projectFixture();
+  for (let round = 0; round < 8; round += 1) {
+    const args = { projectDir, draftSessionId: `racing-session-${round}` };
+    await Promise.all([
+      saveContextDraft({ ...args, content: `Concurrent edit ${round}`, draftVersion: 1 }),
+      discardContextDraft(args),
+    ]);
+    assert.equal(await getContextDraft({ projectDir }), null);
+  }
+});
+
+test("an active session retains only its newest full-content draft snapshot", async () => {
+  const projectDir = await projectFixture();
+  const args = { projectDir, draftSessionId: "bounded-session" };
+  for (let version = 1; version <= 12; version += 1) {
+    await saveContextDraft({ ...args, content: `Edit ${version}: ${"x".repeat(64_000)}`, draftVersion: version });
+  }
+  await saveContextDraft({ ...args, content: "An older delayed request", draftVersion: 0 });
+  const key = createHash("sha256").update("full\0").digest("hex");
+  const files = await readdir(join(projectDir, ".codex-text-control", "drafts", key));
+  assert.equal(files.filter((name) => /^draft-.*\.json$/.test(name)).length, 1);
+  assert.match((await getContextDraft({ projectDir })).content, /^Edit 12:/);
+});
+
+test("readers never fall back to a legacy draft while session snapshots are pruned", async () => {
+  const projectDir = await projectFixture();
+  await saveContextDraft({ projectDir, content: "Legacy content" });
+  const args = { projectDir, draftSessionId: "pruning-session" };
+  await saveContextDraft({ ...args, content: "Session 0", draftVersion: 0 });
+  for (let version = 1; version <= 20; version += 1) {
+    const [, ...readers] = await Promise.all([
+      saveContextDraft({ ...args, content: `Session ${version}`, draftVersion: version }),
+      ...Array.from({ length: 4 }, () => getContextDraft({ projectDir })),
+    ]);
+    for (const draft of readers) assert.match(draft?.content || "", /^Session /);
+  }
+});
+
+test("draft order and cancellation survive delayed writes from another MCP process", async (t) => {
+  const projectDir = await projectFixture();
+  const args = { projectDir, draftSessionId: "cross-process" };
+  const delayedWrite = async (options) => {
+    const source = `import { saveContextDraft } from ${JSON.stringify(new URL("../mcp/context-storage.mjs", import.meta.url).href)};
+      process.once("message", async () => {
+        try { await saveContextDraft(JSON.parse(process.argv[1])); process.send({ ok: true }); }
+        catch (error) { process.send({ error: error.message }); }
+        finally { process.disconnect(); }
+      });
+      process.send({ ready: true });`;
+    const child = spawn(process.execPath, ["--input-type=module", "--eval", source, JSON.stringify(options)], { stdio: ["ignore", "ignore", "inherit", "ipc"] });
+    t.after(() => { if (child.exitCode === null) child.kill(); });
+    let ready;
+    const started = new Promise((resolve) => { ready = resolve; });
+    const completed = new Promise((resolve, reject) => {
+      child.on("message", (message) => {
+        if (message.ready) ready();
+        else if (message.error) reject(new Error(message.error));
+        else if (message.ok) resolve();
+      });
+      child.on("error", reject);
+      child.on("exit", (code) => { if (code) reject(new Error(`Draft worker exited with ${code}`)); });
+    });
+    await started;
+    return { complete: () => { child.send({ write: true }); return completed; } };
+  };
+  const older = await delayedWrite({ ...args, content: "Old process write", draftVersion: 1 });
+  await saveContextDraft({ ...args, content: "Latest process write", draftVersion: 2 });
+  await older.complete();
+  assert.equal((await getContextDraft({ projectDir }))?.content, "Latest process write");
+
+  const cancelled = await delayedWrite({ ...args, content: "After cancellation", draftVersion: 3 });
+  await discardContextDraft(args);
+  await cancelled.complete();
+  assert.equal(await getContextDraft({ projectDir }), null);
 });

@@ -1,7 +1,7 @@
 {
   "name": "codex-text-control",
-  "version": "0.5.11+codex.20260903171439",
-  "description": "Edit a single continuous Markdown body in Codex and save an authoritative revision when finished.",
+  "version": "0.6.0",
+  "description": "Read a single continuous Markdown body as a reply, edit in place, and save a confirmed revision.",
   "author": {
     "name": "Codex Text Control contributors"
   },
@@ -15,8 +15,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Codex Text Control",
-    "shortDescription": "Edit authoritative context directly and save one immutable revision when finished.",
-    "longDescription": "Codex Text Control provides a continuous context canvas and immutable revision history. Edit the full Markdown body, including tables, in one editor or target a named AI extension point. Drafts stay local until you finish; the widget then saves an immutable revision, updates the authoritative pointer, and returns a versioned notice to the current Codex conversation.",
+    "shortDescription": "Read a reply, click to edit, then save or cancel in place.",
+    "longDescription": "A quiet inline reply with formatted paragraphs, lists, tables and code. Click the text to edit in place; Save confirms an immutable revision for subsequent conversation turns. Recoverable drafts and conflict protection stay behind the scenes. This component does not replace native chat messages.",
     "developerName": "Codex Text Control contributors",
     "category": "Productivity",
     "capabilities": [
