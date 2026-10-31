@@ -6,6 +6,9 @@ import { join } from "node:path";
 import { widget, waitFor, pause } from "./helpers/dom.mjs";
 import { discardContextDraft, getContextDraft, saveContextDraft } from "../mcp/context-storage.mjs";
 
+const diskTimeout = 5_000;
+const waitForDisk = (predicate) => waitFor(predicate, diskTimeout);
+
 async function draftFixture() {
   const projectDir = await mkdtemp(join(tmpdir(), "ctc-inline-draft-"));
   const output = { renderId: "draft-review", projectDir, sourceKind: "authority", sourceText: "原来的正文", current: { id: "rev-1", content: "原来的正文" } };
@@ -14,7 +17,7 @@ async function draftFixture() {
     if (name === "discard_context_draft") return { structuredContent: await discardContextDraft(args) };
     throw new Error(`Unexpected tool: ${name}`);
   };
-  return { projectDir, output, call };
+  return { projectDir, output, call, timeout: diskTimeout };
 }
 
 test("reply starts as rendered prose without an editor shell or writes", async (t) => {
@@ -242,10 +245,10 @@ test("undoing to the original removes the persisted draft before reopening", asy
   const fixture = await draftFixture();
   const h = await widget(t, fixture);
   h.edit("撤销掉的修改");
-  await waitFor(() => h.el("status").textContent.includes("草稿已保留"));
+  await waitForDisk(() => h.el("status").textContent.includes("草稿已保留"));
   h.edit("原来的正文");
   h.window.dispatchEvent(new h.window.Event("pagehide"));
-  await waitFor(() => h.el("status").textContent === "");
+  await waitForDisk(() => h.el("status").textContent === "");
   assert.equal(h.el("save").disabled, true);
   assert.equal(await getContextDraft(fixture), null);
 });
@@ -254,10 +257,10 @@ test("a host render arriving just after undo waits for draft cleanup", async (t)
   const fixture = await draftFixture();
   const h = await widget(t, fixture);
   h.edit("已经撤销的修改");
-  await waitFor(() => h.el("status").textContent.includes("草稿已保留"));
+  await waitForDisk(() => h.el("status").textContent.includes("草稿已保留"));
   h.edit("原来的正文");
   h.globals({ toolOutput: { renderId: "after-undo", projectDir: "/workspace/other", sourceText: "下一条正文", current: null } });
-  await waitFor(() => h.el("reply").textContent === "下一条正文");
+  await waitForDisk(() => h.el("reply").textContent === "下一条正文");
   assert.equal(await getContextDraft(fixture), null);
 });
 
@@ -265,14 +268,14 @@ test("cancel in one widget preserves another widget's newer draft", async (t) =>
   const fixture = await draftFixture();
   const a = await widget(t, fixture), b = await widget(t, fixture);
   a.edit("窗口 A 的修改");
-  await waitFor(() => a.el("status").textContent.includes("草稿已保留"));
+  await waitForDisk(() => a.el("status").textContent.includes("草稿已保留"));
   b.edit("窗口 B 的修改");
-  await waitFor(() => b.el("status").textContent.includes("草稿已保留"));
+  await waitForDisk(() => b.el("status").textContent.includes("草稿已保留"));
   a.el("cancel").click();
-  await waitFor(() => a.el("edit-actions").hidden);
+  await waitForDisk(() => a.el("edit-actions").hidden);
   assert.equal((await getContextDraft(fixture))?.content, "窗口 B 的修改");
   a.edit("取消后重新编辑");
-  await waitFor(() => a.el("status").textContent.includes("草稿已保留"));
+  await waitForDisk(() => a.el("status").textContent.includes("草稿已保留"));
   assert.equal((await getContextDraft(fixture))?.content, "取消后重新编辑");
 });
 
@@ -282,23 +285,27 @@ test("cancelling a recovered draft preserves a different session's later edits",
   const a = await widget(t, { ...fixture, output: { ...fixture.output, sourceKind: "draft", sourceText: recovered.content, draft: recovered } });
   const b = await widget(t, fixture);
   b.edit("另一个窗口的后续修改");
-  await waitFor(() => b.el("status").textContent.includes("草稿已保留"));
+  await waitForDisk(() => b.el("status").textContent.includes("草稿已保留"));
   a.el("cancel").click();
-  await waitFor(() => a.el("edit-actions").hidden);
+  await waitForDisk(() => a.el("edit-actions").hidden);
   assert.equal((await getContextDraft(fixture))?.content, "另一个窗口的后续修改");
 });
 
 test("a timed-out draft cannot reappear after cancel when its write completes late", async (t) => {
   const fixture = await draftFixture();
   let completeWrite;
-  const h = await widget(t, { ...fixture, timeout: 30, call: async (request) => {
+  const h = await widget(t, { ...fixture, call: async (request) => {
     if (request.name !== "save_context_draft") return fixture.call(request);
-    return new Promise((resolve, reject) => { completeWrite = () => fixture.call(request).then(resolve, reject); });
+    // Only this intentionally stalled bridge request has a short timeout; disk cleanup keeps its normal test budget.
+    return Promise.race([
+      new Promise((resolve, reject) => { completeWrite = () => fixture.call(request).then(resolve, reject); }),
+      pause(30).then(() => { throw new Error("保存草稿超时，结果未知。"); }),
+    ]);
   } });
   h.edit("延迟完成的草稿");
-  await waitFor(() => h.el("status").textContent.includes("超时"));
+  await waitForDisk(() => h.el("status").textContent.includes("超时"));
   h.el("cancel").click();
-  await waitFor(() => h.el("edit-actions").hidden);
+  await waitForDisk(() => h.el("edit-actions").hidden);
   await completeWrite();
   assert.equal(h.el("reply").textContent, "原来的正文");
   assert.equal(await getContextDraft(fixture), null);

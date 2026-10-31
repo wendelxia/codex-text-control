@@ -2,7 +2,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { fork, spawn } from "node:child_process";
 import { createHash } from "node:crypto";
+import fs from "node:fs/promises";
 import { mkdir, mkdtemp, readdir, readFile, unlink, utimes, writeFile } from "node:fs/promises";
+import { syncBuiltinESMExports } from "node:module";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
@@ -23,6 +25,20 @@ import {
 
 async function projectFixture() {
   return mkdtemp(join(tmpdir(), "codex-text-control-test-"));
+}
+
+function mockFilesystem(t, method, handler) {
+  const original = fs[method];
+  const mocked = t.mock.method(fs, method, (...args) => handler(original, ...args));
+  syncBuiltinESMExports();
+  t.after(() => { mocked.mock.restore(); syncBuiltinESMExports(); });
+}
+
+function draftSessionFiles(projectDir, sessionId) {
+  const scope = createHash("sha256").update("full\0").digest("hex");
+  const session = createHash("sha256").update(sessionId).digest("hex");
+  const directory = join(projectDir, ".codex-text-control", "drafts", scope);
+  return { cancelled: join(directory, `cancelled-${session}.json`), snapshot: (version) => join(directory, `draft-${session}-${version}.json`) };
 }
 
 const concurrentUpdateWorker = fileURLToPath(new URL("./fixtures/context-update-worker.mjs", import.meta.url));
@@ -735,4 +751,78 @@ test("draft order and cancellation survive delayed writes from another MCP proce
   await discardContextDraft(args);
   await cancelled.complete();
   assert.equal(await getContextDraft({ projectDir }), null);
+});
+
+test("obsolete draft cleanup retries transient Windows sharing errors", async (t) => {
+  const projectDir = await projectFixture();
+  const args = { projectDir, draftSessionId: "retry-cleanup" };
+  const paths = draftSessionFiles(projectDir, args.draftSessionId);
+  await saveContextDraft({ ...args, content: "Old", draftVersion: 1 });
+  let attempts = 0;
+  mockFilesystem(t, "unlink", async (original, path) => {
+    if (path === paths.snapshot(1) && ++attempts <= 2) throw Object.assign(new Error("File temporarily in use"), { code: attempts === 1 ? "EPERM" : "EBUSY" });
+    return original(path);
+  });
+  await saveContextDraft({ ...args, content: "New", draftVersion: 2 });
+  assert.equal(attempts, 3);
+  await assert.rejects(() => readFile(paths.snapshot(1)), { code: "ENOENT" });
+  assert.equal((await getContextDraft({ projectDir })).content, "New");
+});
+
+test("busy leftover snapshots stay invisible after replacement or cancellation", async (t) => {
+  const projectDir = await projectFixture();
+  const args = { projectDir, draftSessionId: "busy-cleanup" };
+  const paths = draftSessionFiles(projectDir, args.draftSessionId);
+  await saveContextDraft({ ...args, content: "Old", draftVersion: 1 });
+  mockFilesystem(t, "unlink", async (original, path) => {
+    if (path === paths.snapshot(1) || path === paths.snapshot(2)) throw Object.assign(new Error("File remains in use"), { code: "EPERM" });
+    return original(path);
+  });
+  await saveContextDraft({ ...args, content: "New", draftVersion: 2 });
+  assert.equal((await getContextDraft({ projectDir })).content, "New");
+  assert.equal(JSON.parse(await readFile(paths.snapshot(1), "utf8")).content, "Old");
+  await discardContextDraft(args);
+  mockFilesystem(t, "readFile", async (original, path, ...options) => {
+    if (path === paths.snapshot(1) || path === paths.snapshot(2)) throw Object.assign(new Error("Cancelled payload is still locked"), { code: "EPERM" });
+    return original(path, ...options);
+  });
+  assert.equal(await getContextDraft({ projectDir }), null);
+});
+
+test("a cancellation published during save survives busy snapshot cleanup", async (t) => {
+  const projectDir = await projectFixture();
+  const args = { projectDir, draftSessionId: "cancel-during-save" };
+  const paths = draftSessionFiles(projectDir, args.draftSessionId);
+  mockFilesystem(t, "link", async (original, source, target) => {
+    await original(source, target);
+    if (target === paths.snapshot(1)) await writeFile(paths.cancelled, JSON.stringify({ draftSessionId: args.draftSessionId }));
+  });
+  mockFilesystem(t, "unlink", async (original, path) => {
+    if (path === paths.snapshot(1)) throw Object.assign(new Error("File remains in use"), { code: "EBUSY" });
+    return original(path);
+  });
+  assert.equal(await saveContextDraft({ ...args, content: "Cancelled", draftVersion: 1 }), null);
+  assert.equal(await getContextDraft({ projectDir }), null);
+});
+
+test("cleanup errors without invisibility proof and snapshot publication errors remain failures", async (t) => {
+  const projectDir = await projectFixture();
+  const args = { projectDir, draftSessionId: "unproven-cleanup" };
+  const paths = draftSessionFiles(projectDir, args.draftSessionId);
+  await saveContextDraft({ ...args, content: "Still visible", draftVersion: 1 });
+  mockFilesystem(t, "unlink", async (original, path) => {
+    if (path === paths.snapshot(1)) {
+      await original(paths.snapshot(2)).catch((error) => { if (error.code !== "ENOENT") throw error; });
+      throw Object.assign(new Error("Cannot remove visible draft"), { code: "EPERM" });
+    }
+    return original(path);
+  });
+  await assert.rejects(() => saveContextDraft({ ...args, content: "Lost successor", draftVersion: 2 }), { code: "EPERM" });
+  assert.equal((await getContextDraft({ projectDir })).content, "Still visible");
+  mockFilesystem(t, "link", async (original, source, target) => {
+    if (target === paths.snapshot(3)) throw Object.assign(new Error("Disk write failed"), { code: "EIO" });
+    return original(source, target);
+  });
+  await assert.rejects(() => saveContextDraft({ ...args, content: "Failed new write", draftVersion: 3 }), { code: "EIO" });
+  assert.equal((await getContextDraft({ projectDir })).content, "Still visible");
 });

@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { link, mkdir, readdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
+import { setTimeout as delay } from "node:timers/promises";
 import {
   EXTENSION_NAME_LIMIT,
   listContextExtensionPoints,
@@ -148,6 +149,7 @@ async function sessionSnapshots(directory, key) {
 
 async function readSessionDraft(directory, key, name) {
   for (;;) {
+    if (await readJson(join(directory, `cancelled-${key}.json`))) return null;
     const draft = normalizeDraft(await readJson(join(directory, name)));
     if (await readJson(join(directory, `cancelled-${key}.json`))) return null;
     if (draft) return draft;
@@ -156,6 +158,30 @@ async function readSessionDraft(directory, key, name) {
     name = (await sessionSnapshots(directory, key)).sort((a, b) => b.version - a.version)[0]?.name;
     if (!name) return null;
   }
+}
+
+async function removeObsoleteDraft(path, isInvisible) {
+  const retryDelays = [20, 50, 100];
+  for (let attempt = 0; ; attempt += 1) {
+    try { await unlink(path); return; }
+    catch (error) {
+      if (error?.code === "ENOENT") return;
+      if (!["EPERM", "EBUSY"].includes(error?.code)) throw error;
+      if (attempt < retryDelays.length) { await delay(retryDelays[attempt]); continue; }
+      // Windows may still hold a published hard link open. Only obsolete payloads may remain.
+      // Persistence errors and failures without a durable visibility proof must still surface.
+      if (await isInvisible()) return;
+      throw error;
+    }
+  }
+}
+
+async function draftSnapshotIsInvisible(session, version) {
+  if (await readJson(session.cancelled)) return true;
+  const latest = (await sessionSnapshots(session.directory, session.key)).sort((a, b) => b.version - a.version)[0];
+  if (!latest || latest.version <= version) return false;
+  const draft = await readSessionDraft(session.directory, session.key, latest.name);
+  return draft ? draft.draftVersion > version : Boolean(await readJson(session.cancelled));
 }
 
 function draftMode(value) {
@@ -526,13 +552,13 @@ export async function saveContextDraft({
     }
     // Publish cancellation before cleanup. Readers also honor it if this process exits before unlink.
     if (await readJson(session.cancelled)) {
-      await unlink(path).catch((error) => { if (error?.code !== "ENOENT") throw error; });
+      await removeObsoleteDraft(path, () => draftSnapshotIsInvisible(session, draft.draftVersion));
       return null;
     }
     const snapshots = await sessionSnapshots(session.directory, session.key);
     const latestVersion = Math.max(...snapshots.map((snapshot) => snapshot.version));
-    await Promise.all(snapshots.filter((snapshot) => snapshot.version < latestVersion).map(({ name }) =>
-      unlink(join(session.directory, name)).catch((error) => { if (error?.code !== "ENOENT") throw error; })));
+    await Promise.all(snapshots.filter((snapshot) => snapshot.version < latestVersion).map(({ name, version }) =>
+      removeObsoleteDraft(join(session.directory, name), () => draftSnapshotIsInvisible(session, version))));
     return draft;
   }
   await writeJsonAtomic(draftPath(root, safeMode, safePoint), draft);
@@ -573,9 +599,7 @@ export async function discardContextDraft({ projectDir, mode = "full", extension
     await mkdir(session.directory, { recursive: true });
     await writeJsonExclusiveAtomic(session.cancelled, { draftSessionId: session.id, cancelledAt: new Date().toISOString() });
     const names = (await draftFiles(session.directory)).filter((name) => name.startsWith(`draft-${session.key}-`) && name.endsWith(".json"));
-    await Promise.all(names.map((name) => unlink(join(session.directory, name)).catch((error) => {
-      if (error?.code !== "ENOENT") throw error;
-    })));
+    await Promise.all(names.map((name) => removeObsoleteDraft(join(session.directory, name), async () => Boolean(await readJson(session.cancelled)))));
     return { discarded: true, mode: safeMode, extensionPoint: safePoint, draftSessionId: session.id };
   }
   await unlink(draftPath(root, safeMode, safePoint)).catch((error) => {

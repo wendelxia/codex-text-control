@@ -10,7 +10,7 @@ The component follows host theme changes, grows with its content, and requests b
 
 ## Verification
 
-The local release checks passed 125 automated tests, JavaScript syntax checks, and a real stdio MCP probe. Fifteen Chromium checks covered editing, undo, keyboard actions, save/reload, safe paste, themes, and narrow layouts. A fresh source archive installed its locked production dependencies and completed an editor save; the Codex CLI recognized the public marketplace entry.
+The local release checks passed 129 automated tests, JavaScript syntax checks, and a real stdio MCP probe. Fifteen Chromium checks covered editing, undo, keyboard actions, save/reload, safe paste, themes, and narrow layouts. A fresh source archive installed its locked production dependencies and completed an editor save; the Codex CLI recognized the public marketplace entry.
 
 The production dependency audit reported no known vulnerabilities, with 142 registry signatures and 16 attestations verified. Details and test limits are in the [verification record](../evidence/inline-reply-0.6.0.md).
 

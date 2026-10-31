@@ -13,12 +13,13 @@ Release status: pre-release. See the [0.6.0 announcement](../news/2026-11-01-cod
 
 ## Evidence
 
-- `npm run quality`: 125 tests passed, syntax checks passed, real stdio MCP probe passed.
+- `npm run quality`: 129 tests passed, syntax checks passed, real stdio MCP probe passed.
 - `npm audit --omit=dev --registry=https://registry.npmjs.org/`: 0 reported vulnerabilities.
 - `npm run audit:signatures`: 142 verified registry signatures and 16 verified attestations.
 - Chromium: 15 checks passed, including actual typing, native undo, Escape cancellation, table edits, escaped pipes, code-block Enter, save/reload, safe paste, Ctrl+Enter, dark theme, clean console, and no horizontal overflow at 320/768/1024/1440 px.
 - Browser testing found a lost newline when Chromium inserted a `br` inside a code block. A failing DOM regression test was added, the serializer was fixed, and the browser flow passed afterward.
 - Release review added failing regressions for task markers, quoted image titles, undo cleanup, independent draft sessions, delayed writes, bounded draft storage, and notification retry across queued renders. These pass after the fixes, including a cross-process delayed-write check.
+- Windows CI exposed concurrent draft cleanup sharing violations. Cleanup now retries `EPERM`/`EBUSY` and permits a leftover snapshot only when a durable cancellation marker or a readable newer snapshot makes it invisible. Four fault-injection regressions cover this behavior and ensure actual write failures still surface.
 - A source archive unpacked without `node_modules` installed locked production dependencies, completed the MCP handshake, returned the inline editor resource, and saved confirmed context. Installation logs stayed on stderr.
 - The native Codex CLI recognized the repository marketplace and its `0.6.0` plugin entry.
 
