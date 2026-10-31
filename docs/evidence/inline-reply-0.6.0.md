@@ -2,6 +2,8 @@
 
 Verified on Windows with Node 24.16.0 and Chromium on 2026-11-01 (Asia/Shanghai).
 
+Release status: pre-release. See the [0.6.0 announcement](../news/2026-11-01-codex-text-control-0.6.0.md) for the user-facing changes and the [README](../../README.md#install) for installation.
+
 ## Behavior
 
 - Formatted Markdown is the edit surface. There is no second textarea, source tab, fixed-height canvas, or confirmation dialog.

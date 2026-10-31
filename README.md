@@ -80,8 +80,12 @@ The [historical 0.5.x demo](docs/media/codex-text-control-overview/codex-text-co
 <!-- PUBLIC_MEDIA:END -->
 
 - [News](docs/news/README.md)
+- [0.6.0 announcement](docs/news/2026-11-01-codex-text-control-0.6.0.md)
 - [Verification](docs/evidence/README.md)
 - [Changelog](CHANGELOG.md)
+- [Contributing](CONTRIBUTING.md)
+- [Plugin usage and extension points](skills/codex-text-control/SKILL.md)
+- [Third-party notices](THIRD_PARTY_NOTICES.md)
 - [Security](SECURITY.md)
 - [Report a bug or share your experience](https://github.com/wendelxia/codex-text-control/issues/new)
 - [Repository](https://github.com/wendelxia/codex-text-control)
