@@ -1,6 +1,6 @@
 {
   "name": "codex-text-control",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Read a single continuous Markdown body as a reply, edit in place, and save a confirmed revision.",
   "author": {
     "name": "Codex Text Control contributors"

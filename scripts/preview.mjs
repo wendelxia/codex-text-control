@@ -9,7 +9,7 @@ import { readEditorHtml } from "../mcp/widget-resource.mjs";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const projectDir = resolve(process.env.CTC_PREVIEW_PROJECT || resolve(root, "artifacts/inline-preview"));
 const token = randomBytes(24).toString("hex");
-const client = new Client({ name: "inline-reply-preview", version: "0.6.0" });
+const client = new Client({ name: "inline-reply-preview", version: "0.6.1" });
 await client.connect(new StdioClientTransport({ command: process.execPath, args: [resolve(root, "scripts/start-mcp.mjs")], cwd: root }));
 const allowed = new Set(["save_context_draft", "discard_context_draft", "update_authoritative_context", "get_authoritative_context"]);
 const sample = "这段回复可以直接修改。\n\n点击任意一句话，就能在原处改字。段落、**重点**和列表会保留排版；完成后点保存，或按 `Ctrl + Enter`。\n\n- 正常阅读时，只看到正文。\n- 编辑时，只出现保存和取消。\n- 保存后，下次打开仍是你修改后的版本。\n\n| 内容 | 现在的操作 |\n| :--- | :--- |\n| 一句话 | 直接点进去修改 |\n| 表格 | 在单元格里改字 |\n| 这次修改 | 保存，或取消恢复 |\n\n你可以先把“直接修改”改成自己更喜欢的说法。";

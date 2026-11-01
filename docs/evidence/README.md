@@ -16,6 +16,7 @@
 
 | 文档 | 用途 |
 | --- | --- |
+| [`trigger-routing-0.6.1.md`](trigger-routing-0.6.1.md) | 触发规则的独立模型判断与真实 MCP 回放：误触发、最近回复、保存内容和草稿恢复 |
 | [`inline-reply-0.6.0.md`](inline-reply-0.6.0.md) | 0.6.0 原位 Markdown 编辑、自动化、Chromium、干净安装和真实宿主验证边界 |
 | [`verification-0.5.10-2026-09-02.md`](verification-0.5.10-2026-09-02.md) | 0.5.10 草稿持久化、冲突保护、最近正文和新增回归证据 |
 | [`verification-0.5.11-2026-09-03.md`](verification-0.5.11-2026-09-03.md) | 0.5.11 标题、正文和渲染编号原子同步修复证据 |
@@ -47,6 +48,7 @@
 | 0.5.10 | [`verification-0.5.10-2026-09-02.md`](verification-0.5.10-2026-09-02.md) | 草稿持久化、冲突保护、最近正文和回归测试 |
 | 0.5.11 | [`verification-0.5.11-2026-09-03.md`](verification-0.5.11-2026-09-03.md) | 混合 Widget 载荷修复和回归测试 |
 | 0.6.0 | [`inline-reply-0.6.0.md`](inline-reply-0.6.0.md) | 原位 Markdown 编辑、草稿并发修复、干净安装与预发布验证 |
+| 0.6.1 | [`trigger-routing-0.6.1.md`](trigger-routing-0.6.1.md) | 收紧单句建议误触发，明确直接编辑所选正文，增加独立行为验证 |
 
 ## 截图
 

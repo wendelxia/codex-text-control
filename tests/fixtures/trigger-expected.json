@@ -1,0 +1,122 @@
+[
+  {
+    "id": "ordinary_continue",
+    "route": "none",
+    "text": null
+  },
+  {
+    "id": "single_recommendation",
+    "route": "none",
+    "text": null
+  },
+  {
+    "id": "explanation_table",
+    "route": "none",
+    "text": null
+  },
+  {
+    "id": "delivery_summary",
+    "route": "none",
+    "text": null
+  },
+  {
+    "id": "progress_plan",
+    "route": "none",
+    "text": null
+  },
+  {
+    "id": "complete_plan",
+    "route": "candidate",
+    "text": "发布计划\n\n1. 冻结候选版本。\n2. 通过回归后发布预览版。\n3. 收集使用反馈。"
+  },
+  {
+    "id": "short_tip",
+    "route": "none",
+    "text": null
+  },
+  {
+    "id": "explicit_no_editor",
+    "route": "none",
+    "text": null
+  },
+  {
+    "id": "explicit_last_reply",
+    "route": "reply",
+    "text": "本轮回复：周五先发布预览版。"
+  },
+  {
+    "id": "implicit_last_reply",
+    "route": "reply",
+    "text": "本轮回复：周五先发布预览版。"
+  },
+  {
+    "id": "short_edit_invitation",
+    "route": "reply",
+    "text": "今天的计划：先完成测试，再更新安装包。"
+  },
+  {
+    "id": "open_saved",
+    "route": "saved",
+    "text": null
+  },
+  {
+    "id": "resume_draft",
+    "route": "saved",
+    "text": null
+  },
+  {
+    "id": "edit_code",
+    "route": "none",
+    "text": null
+  },
+  {
+    "id": "plugin_bug_report",
+    "route": "none",
+    "text": null
+  },
+  {
+    "id": "quoted_edit_phrase",
+    "route": "none",
+    "text": null
+  },
+  {
+    "id": "missing_target",
+    "route": "clarify",
+    "text": null
+  },
+  {
+    "id": "version_notice",
+    "route": "read",
+    "text": null
+  },
+  {
+    "id": "quoted_notice",
+    "route": "none",
+    "text": null
+  },
+  {
+    "id": "explicit_new_editable",
+    "route": "candidate",
+    "text": "欢迎加入！今天我们先认识彼此，再一起完成第一项练习。"
+  },
+  {
+    "id": "extension_only",
+    "route": "extension",
+    "text": null
+  },
+  {
+    "id": "edit_table",
+    "route": "reply",
+    "text": "| 任务 | 日期 |\n| --- | --- |\n| 发布 | 周五 |"
+  },
+  {
+    "id": "named_earlier_reply",
+    "route": "reply",
+    "text": "第一份方案：先邀请少量用户。"
+  },
+  {
+    "id": "plugin_question",
+    "route": "none",
+    "text": null
+  }
+]

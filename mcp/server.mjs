@@ -35,7 +35,7 @@ const widgetToolMeta = (invoking, invoked) => ({
 });
 
 const server = new McpServer(
-  { name: "codex-text-control", version: "0.6.0" },
+  { name: "codex-text-control", version: "0.6.1" },
   {
     instructions:
       "Codex Text Control presents a single continuous Markdown body as an editable reply. Every tool call must pass the current workspace root projectDir explicitly. The response appears as formatted prose; only editing reveals Save and Cancel. Save creates an immutable confirmed revision and sends a short version notice. Read get_authoritative_context before continuing from a notice; use fullContent only when the recent excerpt is insufficient. Do not repeat the displayed body in another message. This component does not replace native chat history.",
@@ -53,14 +53,15 @@ registerAppTool(
   {
     title: "Show editable reply",
     description:
-      "Show a response as formatted prose that the user can click and edit in place. Pass the current workspace root projectDir. This is a single continuous Markdown body, including tables and code. If you supply a custom title, include the matching sourceText in the same call. Extension mode displays only the named extension point. After rendering, do not repeat the body in a separate assistant message.",
+      "Show a response as formatted prose the user can edit in place. Use for direct editing requests or a complete reusable plan/conclusion the user asked for, not ordinary questions, one-line advice, delivery summaries or plugin troubleshooting. Respect requests not to open the editor. For 'let me edit' / '我来改下' without another target, pass the exact last assistant reply as sourceText, even when saved context exists. In full-body mode, omit sourceText only to reopen saved context or resume a draft. Pass the current workspace root projectDir. This is a single continuous Markdown body, including tables and code. A custom title requires its matching candidate body. Extension mode uses extensionPoint and extensionText to display only the named point. Do not repeat the displayed body in another message.",
     inputSchema: {
       ...projectArgs,
       sourceText: z
         .string()
         .max(CONTEXT_LIMITS.content)
         .refine((value) => value.trim().length > 0, "sourceText 必须包含非空候选正文，不能打开空画布。")
-        .optional(),
+        .optional()
+        .describe("Exact complete reply selected for editing, or the completed new conclusion draft. Required when editing a chat reply; omitting it reopens project context/drafts, not the last chat message."),
       extensionPoint: z.string().trim().min(1).max(CONTEXT_LIMITS.extensionName).optional(),
       extensionText: z.string().max(CONTEXT_LIMITS.content).optional(),
       title: z.string().trim().max(200).optional(),

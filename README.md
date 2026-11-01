@@ -4,8 +4,8 @@
 
 <div align="center">
   <p>
-    <a href="https://github.com/wendelxia/codex-text-control/releases/tag/v0.6.0"><img alt="status: pre-release" src="https://img.shields.io/badge/status-pre--release-737373"></a>
-    <img alt="version: 0.6.0" src="https://img.shields.io/badge/version-0.6.0-262626">
+    <a href="https://github.com/wendelxia/codex-text-control/releases/tag/v0.6.1"><img alt="status: pre-release" src="https://img.shields.io/badge/status-pre--release-737373"></a>
+    <img alt="version: 0.6.1" src="https://img.shields.io/badge/version-0.6.1-262626">
     <img alt="Node.js >= 22" src="https://img.shields.io/badge/Node.js-%3E%3D22-339933?logo=nodedotjs&logoColor=white">
     <a href="https://github.com/wendelxia/codex-text-control/actions/workflows/quality.yml"><img alt="CI" src="https://github.com/wendelxia/codex-text-control/actions/workflows/quality.yml/badge.svg"></a>
     <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-0f766e"></a>
@@ -24,6 +24,7 @@ Codex Text Control is a local Codex plugin that presents an editable response as
 
 ## Core behavior
 
+- Ordinary questions and one-line advice stay in chat. “Let me edit” opens the last reply; saved context opens when explicitly requested. Complete plans or conclusions requested by the user can still appear directly as editable text.
 - One continuous editor for rendered paragraphs, lists, tables, emphasis, links, and code. Untouched blocks retain their original Markdown.
 - Save and Cancel appear only during editing. Ctrl/Cmd+Enter saves; Escape cancels. The initial reply can be accepted without changing a word.
 - Drafts save after pauses and when the page hides, but stay separate from revision history.
@@ -37,20 +38,20 @@ Codex Text Control is a local Codex plugin that presents an editable response as
 Requires Node.js 22 or newer and a Codex desktop/CLI build with plugin marketplace support.
 
 ```sh
-codex plugin marketplace add wendelxia/codex-text-control --ref v0.6.0
+codex plugin marketplace add wendelxia/codex-text-control --ref v0.6.1
 codex plugin add codex-text-control@codex-text-control
 ```
 
 Restart Codex after installation, then ask: **"Let me edit this response."** The first start installs the locked production dependencies from the npm registry. Your drafts and confirmed versions stay in the project's `.codex-text-control/` directory.
 
-Already installed from a personal marketplace? Update that marketplace's plugin source to `v0.6.0` and reinstall its existing entry to avoid two enabled copies.
+Already installed from a personal marketplace? Update that marketplace's plugin source to `v0.6.1` and reinstall its existing entry to avoid two enabled copies.
 
 ## Try from source
 
 ```powershell
 git clone https://github.com/wendelxia/codex-text-control.git
 Set-Location codex-text-control
-git checkout v0.6.0
+git checkout v0.6.1
 npm ci --ignore-scripts
 npm run quality
 npm run verify:candidate
@@ -59,7 +60,8 @@ npm run preview
 
 ## Evidence
 
-- 0.6.0 is a pre-release. See the [release notes](https://github.com/wendelxia/codex-text-control/releases/tag/v0.6.0) and [verification record](docs/evidence/inline-reply-0.6.0.md).
+- [Trigger-routing verification](docs/evidence/trigger-routing-0.6.1.md) covers ordinary answers, direct edits, saved context and draft recovery.
+- 0.6.1 is a pre-release. See the [release notes](https://github.com/wendelxia/codex-text-control/releases/tag/v0.6.1) and [verification record](docs/evidence/inline-reply-0.6.0.md).
 - `npm run quality` runs storage, extension, DOM interaction, Markdown, bridge, and real MCP protocol checks.
 - `npm run preview` runs the real MCP backend against an isolated `artifacts/inline-preview` directory. Its notification is simulated; it does not send a message to your Codex conversation.
 - Earlier real-host evidence applies to 0.5.x. The new host chrome and notification flow need fresh real-host verification.
