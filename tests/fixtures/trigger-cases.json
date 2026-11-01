@@ -1,0 +1,132 @@
+[
+  {
+    "id": "ordinary_continue",
+    "message": "好的，继续说。",
+    "plannedFinal": "另外需要考虑维护成本。"
+  },
+  {
+    "id": "single_recommendation",
+    "message": "方案 A 和 B 哪个更简单？一句话说结论。",
+    "plannedFinal": "选 A，它需要维护的依赖更少。"
+  },
+  {
+    "id": "explanation_table",
+    "message": "用表格解释 GET 和 POST 的区别。",
+    "plannedFinal": "| 方法 | 常见用途 |\n| --- | --- |\n| GET | 读取 |\n| POST | 提交 |"
+  },
+  {
+    "id": "delivery_summary",
+    "message": "部署吧，做完告诉我结果。",
+    "artifactDelivered": true,
+    "plannedFinal": "已发布 0.6.0，测试通过。建议重启后试用。"
+  },
+  {
+    "id": "progress_plan",
+    "message": "帮我修这个问题。",
+    "phase": "progress",
+    "plannedFinal": "我先复现，再修复，最后运行回归测试。"
+  },
+  {
+    "id": "complete_plan",
+    "message": "把我们的讨论整理成接下来直接执行的完整发布计划。",
+    "plannedFinal": "发布计划\n\n1. 冻结候选版本。\n2. 通过回归后发布预览版。\n3. 收集使用反馈。"
+  },
+  {
+    "id": "short_tip",
+    "message": "随便给我一句整理桌面的建议。",
+    "plannedFinal": "先把每天不用的东西放进抽屉。"
+  },
+  {
+    "id": "explicit_no_editor",
+    "message": "别开画布，直接在聊天里给我一份发布计划。",
+    "plannedFinal": "发布计划\n\n1. 测试。\n2. 发布。\n3. 观察反馈。"
+  },
+  {
+    "id": "explicit_last_reply",
+    "message": "刚才那条回复让我直接改。",
+    "lastReply": "本轮回复：周五先发布预览版。",
+    "savedContext": "旧主题：六月活动预算。"
+  },
+  {
+    "id": "implicit_last_reply",
+    "message": "我来改下",
+    "lastReply": "本轮回复：周五先发布预览版。",
+    "savedContext": "旧主题：六月活动预算。"
+  },
+  {
+    "id": "short_edit_invitation",
+    "message": "让我改",
+    "lastReply": "今天的计划：先完成测试，再更新安装包。",
+    "savedContext": "上个月的采购清单。"
+  },
+  {
+    "id": "open_saved",
+    "message": "打开之前保存的项目上下文。",
+    "lastReply": "刚才随口聊了一下配色。",
+    "savedContext": "已保存的需求：支持键盘操作。"
+  },
+  {
+    "id": "resume_draft",
+    "message": "继续我刚才还没保存的那份草稿。",
+    "lastReply": "刚才随口聊了一下配色。",
+    "savedContext": "原来的确认文本。",
+    "savedDraft": "尚未确认的修改。"
+  },
+  {
+    "id": "edit_code",
+    "message": "我来改代码，你先等一下。",
+    "lastReply": "可以修改 src/button.ts 中的回调。"
+  },
+  {
+    "id": "plugin_bug_report",
+    "message": "它的触发也有问题，自己测试。",
+    "lastReply": "插件已经发布。"
+  },
+  {
+    "id": "quoted_edit_phrase",
+    "message": "别人说“我来改下”是什么意思？",
+    "lastReply": "这个表达比较口语。"
+  },
+  {
+    "id": "missing_target",
+    "message": "让我改"
+  },
+  {
+    "id": "version_notice",
+    "message": "【上下文画布已更新】\n版本：rev-fixture",
+    "savedContext": "用户已经确认的新文本。"
+  },
+  {
+    "id": "quoted_notice",
+    "message": "帮我解释“【上下文画布已更新】版本：rev-fixture”这条提示是什么意思，不用操作。"
+  },
+  {
+    "id": "explicit_new_editable",
+    "message": "把接下来这份欢迎词直接做成我能亲自修改的正文。",
+    "plannedFinal": "欢迎加入！今天我们先认识彼此，再一起完成第一项练习。"
+  },
+  {
+    "id": "extension_only",
+    "message": "只补充扩展点“下一步”。",
+    "savedContext": "固定正文。\n【AI扩展点：下一步】\n待补充。\n【/AI扩展点】\n固定结尾。",
+    "extensionCandidate": "先邀请三位用户试用。"
+  },
+  {
+    "id": "edit_table",
+    "message": "我来改刚才这个表格。",
+    "lastReply": "| 任务 | 日期 |\n| --- | --- |\n| 发布 | 周五 |",
+    "savedContext": "一段其他主题的旧正文。"
+  },
+  {
+    "id": "named_earlier_reply",
+    "message": "打开上面的第一份方案，我来改。",
+    "referencedReply": "第一份方案：先邀请少量用户。",
+    "lastReply": "第二份方案：直接公开发布。",
+    "savedContext": "项目背景材料。"
+  },
+  {
+    "id": "plugin_question",
+    "message": "codex-text-control 是干什么的？",
+    "plannedFinal": "它能让你编辑排版后的回复并保存确认版本。"
+  }
+]

@@ -2,6 +2,19 @@
 
 本文件记录用户能感知的变化、修复、已知限制和回退方法。版本号遵循 Semantic Versioning（语义化版本）：`主版本.次版本.修订版本`。
 
+## [0.6.1] - 2026-11-01
+
+### Fixed
+
+- Ordinary questions and one-line advice no longer qualify for automatic editing merely because their answer contains a recommendation. Complete user-requested plans and conclusions retain automatic editing.
+- Short direct-edit requests such as “我来改下” and “让我改” select the last assistant reply verbatim. Stored project context or drafts are reopened only when explicitly requested.
+- Skill instructions and the model-visible tool description now share the same target-selection rule, exclusions, and respect for “do not open” requests.
+
+### Verification
+
+- Replaced wording-matching trigger tests with 24 independent behavioral scenarios and a real MCP replay checker. The checker verifies the selected body, number of renders, and that opening the editor never changes confirmed context.
+- The pre-release still needs a fresh actual-Codex-host click-through. Model decision tests and isolated MCP replay do not establish every host or model's behavior.
+
 ## [0.6.0] - 2026-11-01
 
 Pre-release. The redesigned editor has automated and Chromium verification; its real Codex host click-through and a cross-platform host matrix remain unverified. See the [verification record](docs/evidence/inline-reply-0.6.0.md).
